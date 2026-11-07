@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -95,4 +96,38 @@ it('no permite a un vendedor acceder a compras', function () {
 
     expect(PurchaseResource::canViewAny())->toBeFalse()
         ->and(PurchaseResource::canCreate())->toBeFalse();
+});
+
+it('permite crear un proveedor desde el formulario de compra', function () {
+    $this->actingAs(User::factory()->admin()->create());
+
+    Livewire::test(CreatePurchase::class)
+        ->callAction(
+            TestAction::make('createOption')->schemaComponent('supplier_id'),
+            data: ['name' => 'Proveedor Nuevo', 'cuit' => '30-11111111-1', 'active' => true],
+        )
+        ->assertHasNoFormErrors();
+
+    expect(Supplier::where('name', 'Proveedor Nuevo')->exists())->toBeTrue();
+});
+
+it('permite crear un producto desde el formulario de compra', function () {
+    $this->actingAs(User::factory()->admin()->create());
+
+    Livewire::test(CreatePurchase::class)
+        ->fillForm(['items' => [['product_id' => null, 'quantity' => 1, 'unit_cost' => 0]]])
+        ->callAction(
+            TestAction::make('createOption')->schemaComponent('items.0.product_id'),
+            data: [
+                'name' => 'Producto Nuevo',
+                'last_cost' => 1000,
+                'margin_percent' => 10,
+                'price_mode' => 'auto',
+                'min_stock' => 0,
+                'active' => true,
+            ],
+        )
+        ->assertHasNoFormErrors();
+
+    expect(Product::where('name', 'Producto Nuevo')->firstOrFail()->sale_price)->toBe('1100.00');
 });

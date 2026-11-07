@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\Purchases\Schemas;
 
+use App\Filament\Resources\Products\Schemas\ProductForm;
+use App\Filament\Resources\Suppliers\Schemas\SupplierForm;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Support\Money;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -29,7 +32,11 @@ class PurchaseForm
                     ->schema([
                         Select::make('supplier_id')->label('Proveedor')
                             ->options(fn (): array => Supplier::query()->where('active', true)->orderBy('name')->pluck('name', 'id')->all())
-                            ->searchable()->required()->live(),
+                            ->searchable()->required()->live()
+                            ->createOptionForm(fn (Schema $schema): Schema => SupplierForm::configure($schema))
+                            ->createOptionUsing(fn (array $data): int => Supplier::create($data)->getKey())
+                            ->createOptionModalHeading('Nuevo proveedor')
+                            ->createOptionAction(fn (Action $action): Action => $action->modalWidth('3xl')),
                         TextInput::make('invoice_number')->label('Número de factura')->required()->maxLength(50)
                             ->unique(
                                 table: 'purchases',
@@ -38,7 +45,13 @@ class PurchaseForm
                             )
                             ->validationMessages(['unique' => 'Ya existe una compra con ese número de factura para este proveedor.']),
                         DatePicker::make('date')->label('Fecha')->default(now())->required(),
-                        Textarea::make('notes')->label('Notas')->columnSpanFull(),
+                    ]),
+                Section::make('Notas')
+                    ->collapsible()
+                    ->collapsed()
+                    ->columnSpanFull()
+                    ->schema([
+                        Textarea::make('notes')->label('Notas')->hiddenLabel(),
                     ]),
                 Section::make('Ítems')
                     ->columnSpanFull()
@@ -51,6 +64,10 @@ class PurchaseForm
                                 Select::make('product_id')->label('Producto')
                                     ->options(fn (): array => Product::query()->where('active', true)->orderBy('name')->pluck('name', 'id')->all())
                                     ->searchable()->required()->live()->columnSpan(2)
+                                    ->createOptionForm(fn (Schema $schema): Schema => ProductForm::configure($schema))
+                                    ->createOptionUsing(fn (array $data): int => Product::create($data)->getKey())
+                                    ->createOptionModalHeading('Nuevo producto')
+                                    ->createOptionAction(fn (Action $action): Action => $action->modalWidth('4xl'))
                                     ->afterStateUpdated(function (?string $state, Set $set): void {
                                         if ($state !== null && ($product = Product::find($state))) {
                                             $set('unit_cost', $product->last_cost);
