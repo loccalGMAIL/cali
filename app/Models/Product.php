@@ -9,9 +9,12 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property PriceMode $price_mode
+ * @property string $last_cost
+ * @property string $margin_percent
  * @property string $sale_price
  */
 #[Fillable([
@@ -57,6 +60,14 @@ class Product extends Model
         $price = (float) $this->last_cost * (1 + (float) $this->margin_percent / 100);
 
         return number_format(round($price, 2), 2, '.', '');
+    }
+
+    /**
+     * @return HasMany<StockMovement, $this>
+     */
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
     }
 
     public function isLowStock(): bool
