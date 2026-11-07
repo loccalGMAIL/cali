@@ -23,8 +23,14 @@ class SupplierForm
                         TextInput::make('phone')->label('Teléfono')->tel()->maxLength(50),
                         TextInput::make('email')->label('Email')->email()->maxLength(255),
                         TextInput::make('address')->label('Dirección')->maxLength(255)->columnSpanFull(),
-                        Textarea::make('notes')->label('Notas')->columnSpanFull(),
                         Toggle::make('active')->label('Activo')->default(true),
+                    ]),
+                Section::make('Notas')
+                    ->collapsible()
+                    ->collapsed()
+                    ->columnSpanFull()
+                    ->schema([
+                        Textarea::make('notes')->label('Notas')->hiddenLabel(),
                     ]),
             ]);
     }
