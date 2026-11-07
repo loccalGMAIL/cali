@@ -136,3 +136,26 @@ it('crea un vendedor con contraseña hasheada', function () {
         ->and($user->password)->not->toBe('secreto123')
         ->and(Hash::check('secreto123', $user->password))->toBeTrue();
 });
+
+it('crea un producto sin código ni stock mínimo', function () {
+    $this->actingAs(User::factory()->admin()->create());
+
+    Livewire::test(CreateProduct::class)
+        ->fillForm([
+            'name' => 'Microondas',
+            'sku' => null,
+            'min_stock' => null,
+            'last_cost' => 100000,
+            'margin_percent' => 30,
+            'price_mode' => PriceMode::Auto->value,
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $product = Product::where('name', 'Microondas')->firstOrFail();
+    expect($product->sku)->toBeNull()
+        ->and($product->min_stock)->toBe(0);
+
+    Product::factory()->create(['sku' => null]);
+    expect(Product::whereNull('sku')->count())->toBe(2);
+});

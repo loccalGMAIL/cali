@@ -21,7 +21,7 @@ class ProductForm
                     ->columns(2)
                     ->columnSpanFull()
                     ->schema([
-                        TextInput::make('sku')->label('Código')->required()->unique(ignoreRecord: true)->maxLength(50),
+                        TextInput::make('sku')->label('Código')->unique(ignoreRecord: true)->maxLength(50),
                         TextInput::make('name')->label('Nombre')->required()->maxLength(255),
                         TextInput::make('brand')->label('Marca')->maxLength(255),
                         Toggle::make('active')->label('Activo')->default(true)->inline(false),
@@ -34,7 +34,8 @@ class ProductForm
                     ->schema([
                         TextInput::make('stock')->label('Stock actual')->integer()->default(0)
                             ->disabled()->dehydrated(false),
-                        TextInput::make('min_stock')->label('Stock mínimo')->required()->integer()->minValue(0)->default(0),
+                        TextInput::make('min_stock')->label('Stock mínimo')->integer()->minValue(0)->default(0)
+                            ->dehydrateStateUsing(fn ($state): int => (int) $state),
                     ]),
                 Section::make('Precio')
                     ->columns(2)
