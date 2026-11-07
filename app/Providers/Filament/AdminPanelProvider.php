@@ -7,6 +7,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -29,6 +30,11 @@ class AdminPanelProvider extends PanelProvider
             ->domain(config('domains.panel'))
             ->path('')
             ->viteTheme('resources/css/filament/admin/theme.css')
+            ->navigationGroups([
+                NavigationGroup::make('Ventas'),
+                NavigationGroup::make('Stock'),
+                NavigationGroup::make('Configuración'),
+            ])
             ->login()
             ->profile()
             ->colors([

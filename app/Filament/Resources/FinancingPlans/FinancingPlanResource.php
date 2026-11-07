@@ -25,6 +25,8 @@ class FinancingPlanResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    protected static ?string $navigationLabel = 'Planes de financiación';
+
     protected static ?string $modelLabel = 'Plan de financiación';
 
     protected static ?string $pluralModelLabel = 'Planes de financiación';

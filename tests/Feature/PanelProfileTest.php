@@ -45,3 +45,15 @@ it('exige la contraseña actual para cambiar el email', function () {
 
     expect($user->fresh()->email)->toBe('nuevo@example.com');
 });
+
+it('ordena el menú en Ventas, Stock y Configuración con etiquetas en español', function () {
+    $this->actingAs(User::factory()->admin()->create());
+
+    $groups = collect(Filament::getNavigation());
+
+    expect($groups->map(fn ($group) => $group->getLabel())->filter()->values()->all())
+        ->toBe(['Ventas', 'Stock', 'Configuración']);
+
+    $labels = $groups->flatMap(fn ($group) => $group->getItems())->map(fn ($item) => $item->getLabel());
+    expect($labels)->toContain('Planes de financiación')->toContain('Usuarios y vendedores');
+});
