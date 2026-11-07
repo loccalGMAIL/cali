@@ -23,7 +23,6 @@ class FinancingPlanForm
                             ->required()->integer()->minValue(1)->default(1),
                         TextInput::make('surcharge_percent')->label('Recargo')
                             ->required()->numeric()->minValue(0)->default(0)->suffix('%'),
-                        TextInput::make('sort_order')->label('Orden')->integer()->default(0),
                         Toggle::make('active')->label('Activo')->default(true),
                     ]),
             ]);

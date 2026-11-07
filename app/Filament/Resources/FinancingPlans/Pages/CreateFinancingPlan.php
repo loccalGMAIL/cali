@@ -8,4 +8,6 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateFinancingPlan extends CreateRecord
 {
     protected static string $resource = FinancingPlanResource::class;
+
+    protected static bool $canCreateAnother = false;
 }

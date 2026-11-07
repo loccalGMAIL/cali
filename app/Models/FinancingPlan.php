@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['name', 'installments_count', 'surcharge_percent', 'active', 'sort_order'])]
+#[Fillable(['name', 'installments_count', 'surcharge_percent', 'active'])]
 class FinancingPlan extends Model
 {
     /** @use HasFactory<FinancingPlanFactory> */
@@ -24,7 +24,6 @@ class FinancingPlan extends Model
             'installments_count' => 'integer',
             'surcharge_percent' => 'decimal:2',
             'active' => 'boolean',
-            'sort_order' => 'integer',
         ];
     }
 
@@ -35,6 +34,6 @@ class FinancingPlan extends Model
     #[Scope]
     protected function active(Builder $query): Builder
     {
-        return $query->where('active', true)->orderBy('sort_order')->orderBy('installments_count');
+        return $query->where('active', true)->orderBy('installments_count');
     }
 }

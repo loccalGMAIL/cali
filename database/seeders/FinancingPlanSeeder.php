@@ -19,8 +19,8 @@ class FinancingPlanSeeder extends Seeder
             ['name' => '8 cuotas', 'installments_count' => 8, 'surcharge_percent' => 40],
         ];
 
-        foreach ($plans as $index => $plan) {
-            FinancingPlan::updateOrCreate(['name' => $plan['name']], $plan + ['active' => true, 'sort_order' => $index]);
+        foreach ($plans as $plan) {
+            FinancingPlan::updateOrCreate(['name' => $plan['name']], $plan + ['active' => true]);
         }
     }
 }

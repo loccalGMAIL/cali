@@ -17,11 +17,9 @@ class FinancingPlansTable
                 TextColumn::make('name')->label('Nombre')->searchable(),
                 TextColumn::make('installments_count')->label('Cuotas')->numeric()->sortable(),
                 TextColumn::make('surcharge_percent')->label('Recargo')->suffix('%')->numeric(2, ',', '.')->sortable(),
-                TextColumn::make('sort_order')->label('Orden')->numeric()->sortable(),
                 IconColumn::make('active')->label('Activo')->boolean(),
             ])
-            ->defaultSort('sort_order')
-            ->reorderable('sort_order')
+            ->defaultSort('installments_count')
             ->filters([
                 TernaryFilter::make('active')->label('Activo'),
             ])

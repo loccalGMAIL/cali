@@ -17,7 +17,6 @@ return new class extends Migration
             $table->unsignedSmallInteger('installments_count');
             $table->decimal('surcharge_percent', 8, 2)->default(0);
             $table->boolean('active')->default(true);
-            $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
         });
     }

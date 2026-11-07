@@ -22,7 +22,6 @@ class FinancingPlanFactory extends Factory
             'installments_count' => $installments,
             'surcharge_percent' => $installments * 5,
             'active' => true,
-            'sort_order' => $installments,
         ];
     }
 
@@ -32,7 +31,6 @@ class FinancingPlanFactory extends Factory
             'name' => 'Contado',
             'installments_count' => 1,
             'surcharge_percent' => 0,
-            'sort_order' => 0,
         ]);
     }
 }
