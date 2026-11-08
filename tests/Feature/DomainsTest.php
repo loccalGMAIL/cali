@@ -32,7 +32,10 @@ it('conserva el esquema y el puerto al enlazar al dominio configurado del sistem
 });
 
 it('sirve el login del panel en el host del panel', function () {
-    $this->get(panelUrl('/login'))->assertOk();
+    $this->get(panelUrl('/login'))
+        ->assertOk()
+        ->assertSee('aria-label="Cali"', false)
+        ->assertSee('cali-login-logo');
 });
 
 it('devuelve 404 en un host desconocido', function () {

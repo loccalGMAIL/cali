@@ -3,6 +3,24 @@
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 
+.cali-login-logo {
+    display: inline-block;
+    color: #292c28;
+    font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    font-size: 52px;
+    font-weight: 600;
+    letter-spacing: -0.075em;
+    line-height: 1;
+}
+
+.cali-login-logo > span {
+    color: #bc5034;
+}
+
+.dark .cali-login-logo {
+    color: #f6f5f0;
+}
+
 /* Tablas compactas (estilo datatable clásico), global para todo el panel. */
 .fi-ta-table {
     font-size: 0.8125rem;

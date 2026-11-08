@@ -12,7 +12,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
+use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -30,6 +30,8 @@ class AdminPanelProvider extends PanelProvider
             ->domain(config('domains.panel'))
             ->path('')
             ->viteTheme('resources/css/filament/admin/theme.css')
+            ->brandLogo(fn (): ?View => auth()->guest() ? view('filament.admin.logo') : null)
+            ->brandLogoHeight(fn (): ?string => auth()->guest() ? '3.25rem' : null)
             ->navigationGroups([
                 NavigationGroup::make('Ventas'),
                 NavigationGroup::make('Stock'),
@@ -48,7 +50,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
-                FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
