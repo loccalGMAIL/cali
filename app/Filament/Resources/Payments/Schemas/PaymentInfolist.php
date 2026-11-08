@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Payments\Schemas;
 
+use App\Models\Payment;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -23,6 +24,15 @@ class PaymentInfolist
                         TextEntry::make('method')->label('Medio de pago')->badge(),
                         TextEntry::make('collector.name')->label('Cobrado por'),
                         TextEntry::make('notes')->label('Notas')->placeholder('—')->columnSpan(3),
+                    ]),
+                Section::make('Anulación')
+                    ->columns(3)
+                    ->columnSpanFull()
+                    ->visible(fn (?Payment $record): bool => $record?->isCancelled() ?? false)
+                    ->schema([
+                        TextEntry::make('cancelled_at')->label('Anulado el')->dateTime('d/m/Y H:i'),
+                        TextEntry::make('canceller.name')->label('Anulado por'),
+                        TextEntry::make('cancellation_reason')->label('Motivo'),
                     ]),
                 Section::make('Imputación')
                     ->columnSpanFull()

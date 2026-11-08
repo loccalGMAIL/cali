@@ -6,8 +6,9 @@ use App\Models\Payment;
 use App\Models\User;
 
 /**
- * Los cobros los gestiona el admin y, una vez registrados, no se editan ni se borran
- * (ya impactaron cuotas y cuenta corriente). El cobro desde la calle queda para la app del vendedor.
+ * Los cobros los gestiona el admin. Un cobro registrado no se edita ni se borra: si hubo un
+ * error se anula (queda en el historial y se revierte su efecto en cuotas y cuenta corriente).
+ * El cobro desde la calle queda para la app del vendedor.
  */
 class PaymentPolicy
 {
@@ -34,5 +35,10 @@ class PaymentPolicy
     public function delete(User $user, Payment $payment): bool
     {
         return false;
+    }
+
+    public function cancel(User $user, Payment $payment): bool
+    {
+        return $user->isAdmin();
     }
 }

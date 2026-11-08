@@ -19,6 +19,10 @@ return new class extends Migration
             $table->string('method')->default('cash');
             $table->foreignId('collected_by')->constrained('users');
             $table->text('notes')->nullable();
+            // Un cobro anulado no se borra: queda como historial con quién, cuándo y por qué.
+            $table->timestamp('cancelled_at')->nullable();
+            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->text('cancellation_reason')->nullable();
             $table->timestamps();
 
             $table->index('date');

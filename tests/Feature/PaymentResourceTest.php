@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CancelPayment;
 use App\Actions\CreateSale;
 use App\Actions\RegisterPayment;
 use App\Enums\InstallmentStatus;
@@ -14,6 +15,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\PaymentPreview;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -121,4 +123,60 @@ it('la vista previa avisa si el monto supera la deuda', function () {
 it('la vista previa pide datos si faltan', function () {
     expect((string) PaymentPreview::debt(null))->toContain('Elegí un cliente')
         ->and((string) PaymentPreview::allocation($this->customer->id, null))->toContain('Ingresá un monto');
+});
+
+it('anula un cobro desde la tabla pidiendo el motivo', function () {
+    $this->actingAs($this->admin);
+    $payment = app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 400], $this->admin);
+
+    Livewire::test(ListPayments::class)
+        ->callAction(TestAction::make('cancel')->table($payment), data: ['reason' => 'Se cargó dos veces'])
+        ->assertNotified('Cobro anulado');
+
+    expect($payment->fresh()->isCancelled())->toBeTrue()
+        ->and($payment->fresh()->cancellation_reason)->toBe('Se cargó dos veces')
+        ->and($this->customer->debt())->toBe('1200.00');
+});
+
+it('exige el motivo para anular', function () {
+    $this->actingAs($this->admin);
+    $payment = app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 400], $this->admin);
+
+    Livewire::test(ListPayments::class)
+        ->callAction(TestAction::make('cancel')->table($payment), data: ['reason' => ''])
+        ->assertHasFormErrors(['reason' => 'required']);
+
+    expect($payment->fresh()->isCancelled())->toBeFalse();
+});
+
+it('anula desde la vista de detalle y muestra los datos de la anulación', function () {
+    $this->actingAs($this->admin);
+    $payment = app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 400], $this->admin);
+
+    Livewire::test(ViewPayment::class, ['record' => $payment->getKey()])
+        ->callAction('cancel', data: ['reason' => 'Error de monto'])
+        ->assertNotified('Cobro anulado');
+
+    Livewire::test(ViewPayment::class, ['record' => $payment->getKey()])
+        ->assertSee('Error de monto')
+        ->assertActionHidden('cancel');
+});
+
+it('no ofrece anular un cobro ya anulado ni un anticipo', function () {
+    $this->actingAs($this->admin);
+    $payment = app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 400], $this->admin);
+    app(CancelPayment::class)->handle($payment, 'Error', $this->admin);
+    $downPayment = Payment::factory()->create();
+
+    Livewire::test(ListPayments::class)
+        ->assertActionHidden(TestAction::make('cancel')->table($payment))
+        ->assertActionHidden(TestAction::make('cancel')->table($downPayment));
+});
+
+it('un vendedor no puede anular cobros', function () {
+    $seller = User::factory()->seller()->create();
+    $payment = Payment::factory()->create();
+
+    expect($seller->can('cancel', $payment))->toBeFalse()
+        ->and($this->admin->can('cancel', $payment))->toBeTrue();
 });

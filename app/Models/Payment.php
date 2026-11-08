@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\PaymentMethod;
 use Database\Factories\PaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property PaymentMethod $method
  * @property string $amount
  */
-#[Fillable(['customer_id', 'date', 'amount', 'method', 'collected_by', 'notes'])]
+#[Fillable(['customer_id', 'date', 'amount', 'method', 'collected_by', 'notes', 'cancelled_at', 'cancelled_by', 'cancellation_reason'])]
 class Payment extends Model
 {
     /** @use HasFactory<PaymentFactory> */
@@ -29,7 +31,41 @@ class Payment extends Model
             'date' => 'date',
             'amount' => 'decimal:2',
             'method' => PaymentMethod::class,
+            'cancelled_at' => 'datetime',
         ];
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->cancelled_at !== null;
+    }
+
+    /**
+     * Un anticipo se cobra al vender y no se imputa a cuotas: forma parte de la venta.
+     */
+    public function isDownPayment(): bool
+    {
+        return ! $this->installments()->exists();
+    }
+
+    /**
+     * Cobros vigentes (excluye los anulados), para totales y reportes.
+     *
+     * @param  Builder<Payment>  $query
+     * @return Builder<Payment>
+     */
+    #[Scope]
+    protected function notCancelled(Builder $query): Builder
+    {
+        return $query->whereNull('cancelled_at');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function canceller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     /**
