@@ -17,10 +17,18 @@ it('sirve la landing en el host de la landing', function () {
         ->assertOk()
         ->assertSee('Cali — Electrodomésticos para tu hogar')
         ->assertSee('Ingresar al sistema')
-        ->assertSee('href="'.panelUrl().'"', false)
+        ->assertSee('href="'.panelUrl('').'"', false)
         ->assertSee('Cocina y refrigeración')
         ->assertSee('Pequeños electrodomésticos')
         ->assertSee('¿Puedo comprar desde esta página?');
+});
+
+it('conserva el esquema y el puerto al enlazar al dominio configurado del sistema', function () {
+    config(['domains.panel' => 'sistema.ejemplo.com']);
+
+    $this->get('https://'.config('domains.landing').':8443/')
+        ->assertOk()
+        ->assertSee('href="https://sistema.ejemplo.com:8443"', false);
 });
 
 it('sirve el login del panel en el host del panel', function () {

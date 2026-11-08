@@ -27,9 +27,12 @@ class CustomerPolicy
         return $user->isSeller() || $user->isAdmin();
     }
 
+    /**
+     * Un cliente con ventas o cobros no se borra (rompería el historial); se desactiva.
+     */
     public function delete(User $user, Customer $record): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() && $record->sales()->doesntExist() && $record->payments()->doesntExist();
     }
 
     public function reorder(User $user): bool
