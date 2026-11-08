@@ -10,6 +10,7 @@ enum InstallmentStatus: string implements HasColor, HasLabel
     case Pending = 'pending';
     case Partial = 'partial';
     case Paid = 'paid';
+    case Cancelled = 'cancelled';
 
     public function getLabel(): string
     {
@@ -17,6 +18,7 @@ enum InstallmentStatus: string implements HasColor, HasLabel
             self::Pending => 'Pendiente',
             self::Partial => 'Parcial',
             self::Paid => 'Pagada',
+            self::Cancelled => 'Anulada',
         };
     }
 
@@ -26,6 +28,17 @@ enum InstallmentStatus: string implements HasColor, HasLabel
             self::Pending => 'gray',
             self::Partial => 'warning',
             self::Paid => 'success',
+            self::Cancelled => 'danger',
         };
+    }
+
+    /**
+     * Estados de una cuota que todavía se debe (excluye las pagadas y las anuladas).
+     *
+     * @return list<string>
+     */
+    public static function unpaidValues(): array
+    {
+        return [self::Pending->value, self::Partial->value];
     }
 }

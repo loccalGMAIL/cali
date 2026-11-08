@@ -13,7 +13,14 @@ function panelUrl(string $path = '/'): string
 }
 
 it('sirve la landing en el host de la landing', function () {
-    $this->get(landingUrl())->assertOk()->assertSee('Ingresar');
+    $this->get(landingUrl())
+        ->assertOk()
+        ->assertSee('Cali — Electrodomésticos para tu hogar')
+        ->assertSee('Ingresar al sistema')
+        ->assertSee('href="'.panelUrl().'"', false)
+        ->assertSee('Cocina y refrigeración')
+        ->assertSee('Pequeños electrodomésticos')
+        ->assertSee('¿Puedo comprar desde esta página?');
 });
 
 it('sirve el login del panel en el host del panel', function () {

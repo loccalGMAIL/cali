@@ -131,7 +131,7 @@ it('anula un cobro desde la tabla pidiendo el motivo', function () {
 
     Livewire::test(ListPayments::class)
         ->callAction(TestAction::make('cancel')->table($payment), data: ['reason' => 'Se cargó dos veces'])
-        ->assertNotified('Cobro anulado');
+        ->assertNotified('Anulación registrada');
 
     expect($payment->fresh()->isCancelled())->toBeTrue()
         ->and($payment->fresh()->cancellation_reason)->toBe('Se cargó dos veces')
@@ -155,7 +155,7 @@ it('anula desde la vista de detalle y muestra los datos de la anulación', funct
 
     Livewire::test(ViewPayment::class, ['record' => $payment->getKey()])
         ->callAction('cancel', data: ['reason' => 'Error de monto'])
-        ->assertNotified('Cobro anulado');
+        ->assertNotified('Anulación registrada');
 
     Livewire::test(ViewPayment::class, ['record' => $payment->getKey()])
         ->assertSee('Error de monto')
@@ -166,7 +166,7 @@ it('no ofrece anular un cobro ya anulado ni un anticipo', function () {
     $this->actingAs($this->admin);
     $payment = app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 400], $this->admin);
     app(CancelPayment::class)->handle($payment, 'Error', $this->admin);
-    $downPayment = Payment::factory()->create();
+    $downPayment = Payment::factory()->downPayment()->create();
 
     Livewire::test(ListPayments::class)
         ->assertActionHidden(TestAction::make('cancel')->table($payment))

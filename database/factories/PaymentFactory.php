@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\PaymentMethod;
 use App\Models\Customer;
 use App\Models\Payment;
+use App\Models\Sale;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -26,5 +27,10 @@ class PaymentFactory extends Factory
             'collected_by' => User::factory(),
             'notes' => null,
         ];
+    }
+
+    public function downPayment(): static
+    {
+        return $this->state(fn () => ['sale_id' => Sale::factory()]);
     }
 }

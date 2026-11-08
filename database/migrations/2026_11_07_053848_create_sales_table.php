@@ -28,6 +28,10 @@ return new class extends Migration
             $table->date('first_due_date');
             $table->string('status')->default('active');
             $table->text('notes')->nullable();
+            // Una venta anulada no se borra: queda como historial con quién, cuándo y por qué.
+            $table->timestamp('cancelled_at')->nullable();
+            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->text('cancellation_reason')->nullable();
             $table->timestamps();
 
             $table->index(['customer_id', 'status']);

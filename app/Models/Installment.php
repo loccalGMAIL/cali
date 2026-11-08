@@ -74,7 +74,7 @@ class Installment extends Model
     #[Scope]
     protected function overdue(Builder $query): Builder
     {
-        return $query->whereDate('due_date', '<', today())->where('status', '!=', InstallmentStatus::Paid->value);
+        return $query->whereDate('due_date', '<', today())->whereIn('status', InstallmentStatus::unpaidValues());
     }
 
     /**
@@ -84,12 +84,12 @@ class Installment extends Model
     #[Scope]
     protected function unpaid(Builder $query): Builder
     {
-        return $query->where('status', '!=', InstallmentStatus::Paid->value);
+        return $query->whereIn('status', InstallmentStatus::unpaidValues());
     }
 
     public function isOverdue(): bool
     {
-        return $this->status !== InstallmentStatus::Paid && $this->due_date->lt(today());
+        return in_array($this->status->value, InstallmentStatus::unpaidValues(), true) && $this->due_date->lt(today());
     }
 
     public function balance(): string

@@ -131,3 +131,46 @@ it('permite crear un producto desde el formulario de compra', function () {
 
     expect(Product::where('name', 'Producto Nuevo')->firstOrFail()->sale_price)->toBe('1100.00');
 });
+
+it('anula una compra desde la tabla y descuenta el stock', function () {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+    $product = Product::factory()->create(['stock' => 0]);
+    $purchase = app(App\Actions\CreatePurchase::class)->handle([
+        'supplier_id' => Supplier::factory()->create()->id,
+        'date' => '2026-11-02',
+        'invoice_number' => 'Z-1',
+    ], [['product_id' => $product->id, 'quantity' => 3, 'unit_cost' => 100]], $admin);
+
+    Livewire::test(ListPurchases::class)
+        ->callAction(TestAction::make('cancel')->table($purchase), data: ['reason' => 'Factura equivocada'])
+        ->assertNotified('Anulación registrada');
+
+    expect($purchase->fresh()->isCancelled())->toBeTrue()
+        ->and($product->fresh()->stock)->toBe(0);
+});
+
+it('avisa en pantalla si ya se vendió parte de lo comprado', function () {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+    $product = Product::factory()->create(['stock' => 0]);
+    $purchase = app(App\Actions\CreatePurchase::class)->handle([
+        'supplier_id' => Supplier::factory()->create()->id,
+        'date' => '2026-11-02',
+        'invoice_number' => 'Z-2',
+    ], [['product_id' => $product->id, 'quantity' => 3, 'unit_cost' => 100]], $admin);
+    $product->update(['stock' => 1]);
+
+    Livewire::test(ViewPurchase::class, ['record' => $purchase->getKey()])
+        ->callAction('cancel', data: ['reason' => 'Error'])
+        ->assertNotified('No se pudo anular');
+
+    expect($purchase->fresh()->isCancelled())->toBeFalse();
+});
+
+it('no ofrece anular una compra ya anulada', function () {
+    $this->actingAs(User::factory()->admin()->create());
+    $purchase = Purchase::factory()->create(['cancelled_at' => now()]);
+
+    Livewire::test(ListPurchases::class)->assertActionHidden(TestAction::make('cancel')->table($purchase));
+});

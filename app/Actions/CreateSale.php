@@ -208,6 +208,7 @@ class CreateSale
 
         $payment = Payment::create([
             'customer_id' => $customer->getKey(),
+            'sale_id' => $sale->getKey(),
             'date' => $data['date'],
             'amount' => $amount,
             'method' => $method instanceof PaymentMethod ? $method : PaymentMethod::from((string) $method),

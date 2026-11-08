@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Sales\Tables;
 
 use App\Enums\SaleStatus;
+use App\Filament\Resources\Sales\Actions\CancelSaleAction;
 use App\Models\Sale;
 use App\Models\User;
 use Filament\Actions\ViewAction;
@@ -34,6 +35,7 @@ class SalesTable
             ])
             ->recordActions([
                 ViewAction::make()->label('Ver'),
+                CancelSaleAction::make(),
             ]);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enums\StockMovementType;
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
@@ -72,9 +73,17 @@ class CreatePurchase
         });
     }
 
+    /**
+     * La factura no puede repetirse para un mismo proveedor entre las compras vigentes
+     * (la de una compra anulada se puede volver a cargar). Se bloquea al proveedor para
+     * que dos cargas simultáneas no pasen la validación a la vez.
+     */
     private function ensureInvoiceIsUnique(int $supplierId, string $invoiceNumber): void
     {
+        Supplier::query()->lockForUpdate()->findOrFail($supplierId);
+
         $exists = Purchase::query()
+            ->notCancelled()
             ->where('supplier_id', $supplierId)
             ->where('invoice_number', $invoiceNumber)
             ->exists();

@@ -35,7 +35,7 @@ class CancelPayment
 
             if ($locked->isDownPayment()) {
                 throw ValidationException::withMessages([
-                    'payment' => 'Un anticipo forma parte de la venta y no se anula por separado.',
+                    'payment' => "Este cobro es el anticipo de la venta #{$locked->sale_id}: para anularlo hay que anular la venta.",
                 ]);
             }
 

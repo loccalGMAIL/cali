@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Purchases\Schemas;
 
+use App\Models\Purchase;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -23,6 +24,15 @@ class PurchaseInfolist
                         TextEntry::make('total')->label('Total')->money('ARS', locale: 'es_AR')->weight('bold'),
                         TextEntry::make('user.name')->label('Cargada por'),
                         TextEntry::make('notes')->label('Notas')->placeholder('—')->columnSpanFull(),
+                    ]),
+                Section::make('Anulación')
+                    ->columns(3)
+                    ->columnSpanFull()
+                    ->visible(fn (?Purchase $record): bool => $record?->isCancelled() ?? false)
+                    ->schema([
+                        TextEntry::make('cancelled_at')->label('Anulada el')->dateTime('d/m/Y H:i'),
+                        TextEntry::make('canceller.name')->label('Anulada por'),
+                        TextEntry::make('cancellation_reason')->label('Motivo'),
                     ]),
                 Section::make('Ítems')
                     ->columnSpanFull()

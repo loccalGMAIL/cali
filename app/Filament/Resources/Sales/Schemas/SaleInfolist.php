@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Sales\Schemas;
 
 use App\Models\Installment;
+use App\Models\Sale;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -28,6 +29,15 @@ class SaleInfolist
                         TextEntry::make('down_payment')->label('Anticipo')->money('ARS', locale: 'es_AR'),
                         TextEntry::make('total')->label('Total')->money('ARS', locale: 'es_AR')->weight('bold'),
                         TextEntry::make('notes')->label('Notas')->placeholder('—')->columnSpanFull(),
+                    ]),
+                Section::make('Anulación')
+                    ->columns(3)
+                    ->columnSpanFull()
+                    ->visible(fn (?Sale $record): bool => $record?->isCancelled() ?? false)
+                    ->schema([
+                        TextEntry::make('cancelled_at')->label('Anulada el')->dateTime('d/m/Y H:i'),
+                        TextEntry::make('canceller.name')->label('Anulada por'),
+                        TextEntry::make('cancellation_reason')->label('Motivo'),
                     ]),
                 Section::make('Productos')
                     ->columnSpanFull()

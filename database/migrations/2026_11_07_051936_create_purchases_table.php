@@ -19,9 +19,15 @@ return new class extends Migration
             $table->decimal('total', 12, 2)->default(0);
             $table->text('notes')->nullable();
             $table->foreignId('user_id')->constrained();
+            // Una compra anulada no se borra: queda como historial con quién, cuándo y por qué.
+            $table->timestamp('cancelled_at')->nullable();
+            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->text('cancellation_reason')->nullable();
             $table->timestamps();
 
-            $table->unique(['supplier_id', 'invoice_number']);
+            // No es único a nivel base: la factura de una compra anulada se puede volver a cargar.
+            // La unicidad entre compras vigentes la garantiza la acción CreatePurchase.
+            $table->index(['supplier_id', 'invoice_number']);
             $table->index('date');
         });
     }

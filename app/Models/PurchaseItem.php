@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property string $unit_cost
+ * @property string $subtotal
+ */
 #[Fillable(['purchase_id', 'product_id', 'quantity', 'unit_cost', 'subtotal'])]
 class PurchaseItem extends Model
 {

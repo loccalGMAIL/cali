@@ -7,7 +7,7 @@ use App\Models\User;
 
 /**
  * Las compras solo las gestiona el admin y, una vez cargadas, no se editan ni se borran
- * (el stock y el costo ya fueron impactados).
+ * (el stock y el costo ya fueron impactados): si hubo un error se anulan (queda en el historial).
  */
 class PurchasePolicy
 {
@@ -34,5 +34,10 @@ class PurchasePolicy
     public function delete(User $user, Purchase $purchase): bool
     {
         return false;
+    }
+
+    public function cancel(User $user, Purchase $purchase): bool
+    {
+        return $user->isAdmin();
     }
 }

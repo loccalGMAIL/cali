@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\RegisterPayment;
+use App\Enums\SaleStatus;
 use App\Filament\Resources\Sales\Pages\CreateSale;
 use App\Filament\Resources\Sales\Pages\ListSales;
 use App\Filament\Resources\Sales\Pages\ViewSale;
@@ -10,6 +12,7 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
 use App\Support\SalePreview;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -138,4 +141,70 @@ it('la vista previa avisa si el anticipo supera el precio', function () {
 
 it('la vista previa pide completar datos si faltan', function () {
     expect((string) SalePreview::render([], null, null, 0))->toContain('Elegí al menos un producto');
+});
+
+it('anula una venta desde la tabla y devuelve el stock', function () {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+
+    $sale = app(App\Actions\CreateSale::class)->handle([
+        'customer_id' => $this->customer->id,
+        'seller_id' => $admin->id,
+        'financing_plan_id' => $this->plan->id,
+        'date' => '2026-11-07',
+        'first_due_date' => '2026-12-07',
+        'down_payment' => 0,
+    ], [['product_id' => $this->product->id, 'quantity' => 2, 'unit_price' => 1000]], $admin);
+
+    Livewire::test(ListSales::class)
+        ->callAction(TestAction::make('cancel')->table($sale), data: ['reason' => 'Error de carga'])
+        ->assertNotified('Anulación registrada');
+
+    expect($sale->fresh()->isCancelled())->toBeTrue()
+        ->and($this->product->fresh()->stock)->toBe(5);
+});
+
+it('exige el motivo para anular una venta', function () {
+    $this->actingAs(User::factory()->admin()->create());
+    $sale = Sale::factory()->create();
+
+    Livewire::test(ListSales::class)
+        ->callAction(TestAction::make('cancel')->table($sale), data: ['reason' => ''])
+        ->assertHasFormErrors(['reason' => 'required']);
+});
+
+it('no ofrece anular una venta ya anulada ni a un vendedor', function () {
+    $admin = User::factory()->admin()->create();
+    $seller = User::factory()->seller()->create();
+    $mine = Sale::factory()->create(['seller_id' => $seller->id]);
+    $cancelled = Sale::factory()->create(['status' => SaleStatus::Cancelled]);
+
+    $this->actingAs($admin);
+    Livewire::test(ListSales::class)->assertActionHidden(TestAction::make('cancel')->table($cancelled));
+
+    $this->actingAs($seller);
+    Livewire::test(ListSales::class)->assertActionHidden(TestAction::make('cancel')->table($mine));
+
+    expect($seller->can('cancel', $mine))->toBeFalse();
+});
+
+it('avisa en pantalla si la venta tiene cobros imputados', function () {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+
+    $sale = app(App\Actions\CreateSale::class)->handle([
+        'customer_id' => $this->customer->id,
+        'seller_id' => $admin->id,
+        'financing_plan_id' => $this->plan->id,
+        'date' => '2026-11-07',
+        'first_due_date' => '2026-12-07',
+        'down_payment' => 0,
+    ], [['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000]], $admin);
+    app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 100], $admin);
+
+    Livewire::test(ViewSale::class, ['record' => $sale->getKey()])
+        ->callAction('cancel', data: ['reason' => 'Error'])
+        ->assertNotified('No se pudo anular');
+
+    expect($sale->fresh()->isCancelled())->toBeFalse();
 });

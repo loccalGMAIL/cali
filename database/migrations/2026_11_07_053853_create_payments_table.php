@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_id')->constrained();
+            // Solo para el anticipo: la venta a la que pertenece. Los cobros de cuotas no la usan.
+            $table->foreignId('sale_id')->nullable()->constrained();
             $table->date('date');
             $table->decimal('amount', 12, 2);
             $table->string('method')->default('cash');

@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\SaleStatus;
 use Database\Factories\SaleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 #[Fillable([
     'customer_id', 'seller_id', 'date', 'financing_plan_id', 'installments_count', 'surcharge_percent',
     'subtotal', 'down_payment', 'financed_amount', 'total', 'total_cost', 'first_due_date', 'status', 'notes',
+    'cancelled_at', 'cancelled_by', 'cancellation_reason',
 ])]
 class Sale extends Model
 {
@@ -45,7 +48,33 @@ class Sale extends Model
             'total' => 'decimal:2',
             'total_cost' => 'decimal:2',
             'status' => SaleStatus::class,
+            'cancelled_at' => 'datetime',
         ];
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === SaleStatus::Cancelled;
+    }
+
+    /**
+     * Ventas vigentes (excluye las anuladas), para totales y reportes.
+     *
+     * @param  Builder<Sale>  $query
+     * @return Builder<Sale>
+     */
+    #[Scope]
+    protected function notCancelled(Builder $query): Builder
+    {
+        return $query->where('status', '!=', SaleStatus::Cancelled->value);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function canceller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     /**

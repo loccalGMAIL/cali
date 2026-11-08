@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property PaymentMethod $method
  * @property string $amount
  */
-#[Fillable(['customer_id', 'date', 'amount', 'method', 'collected_by', 'notes', 'cancelled_at', 'cancelled_by', 'cancellation_reason'])]
+#[Fillable(['customer_id', 'sale_id', 'date', 'amount', 'method', 'collected_by', 'notes', 'cancelled_at', 'cancelled_by', 'cancellation_reason'])]
 class Payment extends Model
 {
     /** @use HasFactory<PaymentFactory> */
@@ -41,11 +41,20 @@ class Payment extends Model
     }
 
     /**
-     * Un anticipo se cobra al vender y no se imputa a cuotas: forma parte de la venta.
+     * Un anticipo se cobra al vender y no se imputa a cuotas: forma parte de la venta
+     * y se anula junto con ella.
      */
     public function isDownPayment(): bool
     {
-        return ! $this->installments()->exists();
+        return $this->sale_id !== null;
+    }
+
+    /**
+     * @return BelongsTo<Sale, $this>
+     */
+    public function sale(): BelongsTo
+    {
+        return $this->belongsTo(Sale::class);
     }
 
     /**

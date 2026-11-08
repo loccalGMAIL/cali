@@ -40,7 +40,7 @@ class PurchaseForm
                         TextInput::make('invoice_number')->label('Número de factura')->required()->maxLength(50)
                             ->unique(
                                 table: 'purchases',
-                                modifyRuleUsing: fn (Unique $rule, Get $get): Unique => $rule->where('supplier_id', $get('supplier_id')),
+                                modifyRuleUsing: fn (Unique $rule, Get $get): Unique => $rule->where('supplier_id', $get('supplier_id'))->whereNull('cancelled_at'),
                                 ignoreRecord: true,
                             )
                             ->validationMessages(['unique' => 'Ya existe una compra con ese número de factura para este proveedor.']),

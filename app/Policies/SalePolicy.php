@@ -7,7 +7,7 @@ use App\Models\User;
 
 /**
  * El admin gestiona todas las ventas; el vendedor crea ventas y ve solo las suyas.
- * Una venta confirmada no se edita ni se borra (la anulación queda para otra etapa).
+ * Una venta confirmada no se edita ni se borra: si hubo un error se anula (queda en el historial).
  */
 class SalePolicy
 {
@@ -34,5 +34,13 @@ class SalePolicy
     public function delete(User $user, Sale $sale): bool
     {
         return false;
+    }
+
+    /**
+     * Anular una venta revierte stock, cuotas y cuenta corriente: solo el admin.
+     */
+    public function cancel(User $user, Sale $sale): bool
+    {
+        return $user->isAdmin();
     }
 }
