@@ -68,9 +68,9 @@ it('las estadísticas de cobranza muestran los totales', function () {
     dashboardSale($this->customer, $this->admin, today()->subMonths(2)->toDateString());
 
     Livewire::test(CollectionsOverview::class)
-        ->assertSee('Total por cobrar')->assertSee('1.200,00')->assertSee('3 cuotas pendientes')
-        ->assertSee('Ganancia futura')->assertSee('600,00')
-        ->assertSee('Cuotas vencidas')->assertSee('800,00')->assertSee('2 cuotas vencidas')
+        ->assertSee('Total por cobrar')->assertSee('1.200')->assertSee('3 cuotas pendientes')
+        ->assertSee('Ganancia futura')->assertSee('600')
+        ->assertSee('Cuotas vencidas')->assertSee('800')->assertSee('2 cuotas vencidas')
         ->assertSee('Cobrado este mes');
 });
 
@@ -147,8 +147,8 @@ it('las estadísticas de stock y compras muestran valor, compras del mes y stock
     ], [['product_id' => Product::factory()->create(['stock' => 0])->id, 'quantity' => 2, 'unit_cost' => 500]], $this->admin);
 
     Livewire::test(StockAndPurchasesOverview::class)
-        ->assertSee('Valor del stock')->assertSee('2.000,00')   // 1 × 1000 + 2 × 500
-        ->assertSee('Compras del mes')->assertSee('1.000,00')
+        ->assertSee('Valor del stock')->assertSee('2.000')   // 1 × 1000 + 2 × 500
+        ->assertSee('Compras del mes')->assertSee('1.000')
         ->assertSee('Productos con stock bajo');
 });
 

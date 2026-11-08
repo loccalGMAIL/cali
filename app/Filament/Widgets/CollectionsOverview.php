@@ -42,20 +42,20 @@ class CollectionsOverview extends StatsOverviewWidget
         [$comparison, $comparisonColor, $comparisonIcon] = self::compare($thisMonth, $lastMonth);
 
         return [
-            Stat::make('Total por cobrar', Money::format($receivable['amount']))
+            Stat::make('Total por cobrar', Money::whole($receivable['amount']))
                 ->description(self::quantity($receivable['count'], 'cuota pendiente', 'cuotas pendientes'))
                 ->descriptionIcon(Heroicon::OutlinedBanknotes)
                 ->color('primary'),
-            Stat::make('Ganancia futura', Money::format($metrics->futureProfit()))
+            Stat::make('Ganancia futura', Money::whole($metrics->futureProfit()))
                 ->description('Sobre lo que falta cobrar')
                 ->descriptionIcon(Heroicon::OutlinedArrowTrendingUp)
                 ->color('success'),
-            Stat::make('Cuotas vencidas', Money::format($overdue['amount']))
+            Stat::make('Cuotas vencidas', Money::whole($overdue['amount']))
                 ->description(self::quantity($overdue['count'], 'cuota vencida', 'cuotas vencidas'))
                 ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
                 ->color($overdue['count'] > 0 ? 'danger' : 'gray'),
-            Stat::make('Cobrado este mes', Money::format($thisMonth))
-                ->description($comparison.' · mes anterior '.Money::format($lastMonth))
+            Stat::make('Cobrado este mes', Money::whole($thisMonth))
+                ->description($comparison.' · mes anterior '.Money::whole($lastMonth))
                 ->descriptionIcon($comparisonIcon)
                 ->color($comparisonColor),
         ];

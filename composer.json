@@ -39,6 +39,10 @@
     "scripts": {
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
         "lint": "vendor/bin/pint",
+        "demo": [
+            "@php artisan migrate:fresh --seed",
+            "@php artisan db:seed --class=DemoSeeder"
+        ],
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",

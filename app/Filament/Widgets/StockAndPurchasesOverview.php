@@ -39,12 +39,12 @@ class StockAndPurchasesOverview extends StatsOverviewWidget
         $lowStock = $metrics->lowStockCount();
 
         return [
-            Stat::make('Valor del stock', Money::format($metrics->stockValue()))
+            Stat::make('Valor del stock', Money::whole($metrics->stockValue()))
                 ->description('A último costo')
                 ->descriptionIcon(Heroicon::OutlinedCube)
                 ->color('primary'),
-            Stat::make('Compras del mes', Money::format($thisMonth))
-                ->description(str_replace('Sin cobros', 'Sin compras', $comparison).' · mes anterior '.Money::format($lastMonth))
+            Stat::make('Compras del mes', Money::whole($thisMonth))
+                ->description(str_replace('Sin cobros', 'Sin compras', $comparison).' · mes anterior '.Money::whole($lastMonth))
                 ->descriptionIcon($icon)
                 ->color('gray'),
             Stat::make('Productos con stock bajo', (string) $lowStock)
