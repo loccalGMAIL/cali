@@ -57,3 +57,10 @@ it('ordena el menú en Ventas, Stock y Configuración con etiquetas en español'
     $labels = $groups->flatMap(fn ($group) => $group->getItems())->map(fn ($item) => $item->getLabel());
     expect($labels)->toContain('Planes de financiación')->toContain('Usuarios y vendedores');
 });
+
+it('el dashboard no muestra la tarjeta de bienvenida con el botón Salir', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->get('http://'.config('domains.panel').'/')
+        ->assertOk()
+        ->assertDontSee('Bienvenid');
+});
