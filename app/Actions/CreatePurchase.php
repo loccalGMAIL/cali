@@ -2,18 +2,24 @@
 
 namespace App\Actions;
 
+use App\Enums\ActivityEvent;
 use App\Enums\StockMovementType;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\StockService;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CreatePurchase
 {
-    public function __construct(private readonly StockService $stock) {}
+    public function __construct(
+        private readonly StockService $stock,
+        private readonly ActivityLogger $activity,
+    ) {}
 
     /**
      * Registra una factura de compra: suma el stock, actualiza el último costo de
@@ -68,6 +74,14 @@ class CreatePurchase
             }
 
             $purchase->update(['total' => $total]);
+
+            $this->activity->log(
+                ActivityEvent::Created,
+                "Registró la compra #{$purchase->getKey()} de {$purchase->supplier->name} por ".Money::format($total),
+                $purchase,
+                ['invoice_number' => $purchase->invoice_number, 'total' => $total, 'items' => count($items)],
+                $user,
+            );
 
             return $purchase->load('items');
         });

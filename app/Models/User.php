@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Models\Concerns\LogsActivity;
+use App\Models\Contracts\ActivityLoggable;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -18,10 +20,10 @@ use Illuminate\Notifications\Notifiable;
  */
 #[Fillable(['name', 'email', 'password', 'role', 'google_id', 'active'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements ActivityLoggable, FilamentUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, LogsActivity, Notifiable;
 
     /**
      * @return array<string, string>
@@ -57,5 +59,23 @@ class User extends Authenticatable implements FilamentUser
     public function scopeSellers(Builder $query): void
     {
         $query->where('role', UserRole::Seller->value)->where('active', true);
+    }
+
+    public function activityNoun(): string
+    {
+        return 'el usuario';
+    }
+
+    public function activityTitle(): string
+    {
+        return (string) $this->name;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function activityIgnoredAttributes(): array
+    {
+        return ['remember_token'];
     }
 }

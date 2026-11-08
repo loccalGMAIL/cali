@@ -64,3 +64,12 @@ it('el dashboard no muestra la tarjeta de bienvenida con el botón Salir', funct
         ->assertOk()
         ->assertDontSee('Bienvenid');
 });
+
+it('muestra el logo de Cali dentro del panel y en el login', function () {
+    $this->get('http://'.config('domains.panel').'/login')->assertOk()->assertSee('cali-login-logo', false);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get('http://'.config('domains.panel').'/')
+        ->assertOk()
+        ->assertSee('cali-login-logo', false);
+});

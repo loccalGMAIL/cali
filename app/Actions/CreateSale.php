@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\AccountMovementType;
+use App\Enums\ActivityEvent;
 use App\Enums\InstallmentStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
@@ -14,8 +15,10 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
 use App\Services\AccountService;
+use App\Services\ActivityLogger;
 use App\Services\SaleCalculator;
 use App\Services\StockService;
+use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -27,6 +30,7 @@ class CreateSale
         private readonly SaleCalculator $calculator,
         private readonly AccountService $accounts,
         private readonly StockService $stock,
+        private readonly ActivityLogger $activity,
     ) {}
 
     /**
@@ -134,6 +138,20 @@ class CreateSale
             if (bccomp($result['down_payment'], '0', 2) > 0) {
                 $this->registerDownPayment($sale, $customer, $result['down_payment'], $data, $user);
             }
+
+            $this->activity->log(
+                ActivityEvent::Created,
+                "Registró la venta #{$sale->getKey()} a {$customer->name} por ".Money::format($sale->total)." en {$sale->installments_count} cuota".($sale->installments_count === 1 ? '' : 's'),
+                $sale,
+                [
+                    'total' => $sale->total,
+                    'down_payment' => $sale->down_payment,
+                    'installments_count' => $sale->installments_count,
+                    'surcharge_percent' => $sale->surcharge_percent,
+                    'seller_id' => $sale->seller_id,
+                ],
+                $user,
+            );
 
             return $sale->load(['items', 'installments']);
         });

@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\AccountMovementType;
+use App\Enums\ActivityEvent;
 use App\Enums\InstallmentStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
@@ -12,7 +13,9 @@ use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\User;
 use App\Services\AccountService;
+use App\Services\ActivityLogger;
 use App\Services\PaymentAllocator;
+use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -23,6 +26,7 @@ class RegisterPayment
     public function __construct(
         private readonly PaymentAllocator $allocator,
         private readonly AccountService $accounts,
+        private readonly ActivityLogger $activity,
     ) {}
 
     /**
@@ -105,6 +109,14 @@ class RegisterPayment
                 reference: $payment,
                 user: $user,
                 date: $date,
+            );
+
+            $this->activity->log(
+                ActivityEvent::Created,
+                "Registró el cobro #{$payment->getKey()} de ".Money::format($amount)." a {$customer->name}",
+                $payment,
+                ['amount' => $amount, 'method' => $payment->method->value, 'installments' => count($allocations)],
+                $user,
             );
 
             return $payment->load('installments');

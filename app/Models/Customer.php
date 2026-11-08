@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
+use App\Models\Contracts\ActivityLoggable;
 use Database\Factories\CustomerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,10 +12,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 #[Fillable(['name', 'document_number', 'phone', 'email', 'address', 'city', 'notes', 'active'])]
-class Customer extends Model
+class Customer extends Model implements ActivityLoggable
 {
     /** @use HasFactory<CustomerFactory> */
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     /**
      * @return array<string, string>
@@ -88,5 +90,15 @@ class Customer extends Model
         $total = (string) ($this->installments()->unpaid()->selectRaw('COALESCE(SUM(amount - paid_amount), 0) as debt')->value('debt') ?? '0');
 
         return number_format((float) $total, 2, '.', '');
+    }
+
+    public function activityNoun(): string
+    {
+        return 'el cliente';
+    }
+
+    public function activityTitle(): string
+    {
+        return (string) $this->name;
     }
 }

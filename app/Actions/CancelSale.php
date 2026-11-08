@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\AccountMovementType;
+use App\Enums\ActivityEvent;
 use App\Enums\InstallmentStatus;
 use App\Enums\SaleStatus;
 use App\Enums\StockMovementType;
@@ -11,7 +12,9 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
 use App\Services\AccountService;
+use App\Services\ActivityLogger;
 use App\Services\StockService;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,6 +23,7 @@ class CancelSale
     public function __construct(
         private readonly StockService $stock,
         private readonly AccountService $accounts,
+        private readonly ActivityLogger $activity,
     ) {}
 
     /**
@@ -67,6 +71,14 @@ class CancelSale
             );
 
             $this->cancelDownPayment($locked, $user);
+
+            $this->activity->log(
+                ActivityEvent::Cancelled,
+                "Anuló la venta #{$locked->getKey()} de ".Money::format($locked->total)." a {$locked->customer->name}: {$reason}",
+                $locked,
+                ['reason' => $reason, 'total' => $locked->total],
+                $user,
+            );
 
             return $locked->refresh();
         });

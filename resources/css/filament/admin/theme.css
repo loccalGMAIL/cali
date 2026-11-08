@@ -7,10 +7,15 @@
     display: inline-block;
     color: #292c28;
     font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-    font-size: 52px;
+    font-size: 30px;
     font-weight: 600;
     letter-spacing: -0.075em;
     line-height: 1;
+}
+
+/* En el login el logo va más grande que en la barra del panel. */
+.fi-simple-layout .cali-login-logo {
+    font-size: 52px;
 }
 
 .cali-login-logo > span {

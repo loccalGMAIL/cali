@@ -29,8 +29,8 @@ class AdminPanelProvider extends PanelProvider
             ->domain(config('domains.panel'))
             ->path('')
             ->viteTheme('resources/css/filament/admin/theme.css')
-            ->brandLogo(fn (): ?View => auth()->guest() ? view('filament.admin.logo') : null)
-            ->brandLogoHeight(fn (): ?string => auth()->guest() ? '3.25rem' : null)
+            ->brandLogo(fn (): View => view('filament.admin.logo'))
+            ->brandLogoHeight(fn (): string => auth()->guest() ? '3.25rem' : '2rem')
             ->navigationGroups([
                 NavigationGroup::make('Ventas'),
                 NavigationGroup::make('Stock'),

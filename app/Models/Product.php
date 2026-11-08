@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\PriceMode;
+use App\Models\Concerns\LogsActivity;
+use App\Models\Contracts\ActivityLoggable;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -21,10 +23,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'sku', 'name', 'brand', 'description', 'active', 'stock', 'min_stock',
     'last_cost', 'margin_percent', 'price_mode', 'sale_price',
 ])]
-class Product extends Model
+class Product extends Model implements ActivityLoggable
 {
     /** @use HasFactory<ProductFactory> */
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     /**
      * @return array<string, string>
@@ -93,5 +95,23 @@ class Product extends Model
     protected function active(Builder $query): Builder
     {
         return $query->where('active', true);
+    }
+
+    public function activityNoun(): string
+    {
+        return 'el producto';
+    }
+
+    public function activityTitle(): string
+    {
+        return (string) $this->name;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function activityIgnoredAttributes(): array
+    {
+        return ['stock'];
     }
 }

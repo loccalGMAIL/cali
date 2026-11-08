@@ -2,18 +2,23 @@
 
 namespace App\Actions;
 
+use App\Enums\ActivityEvent;
 use App\Enums\StockMovementType;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CancelPurchase
 {
-    public function __construct(private readonly StockService $stock) {}
+    public function __construct(
+        private readonly StockService $stock,
+        private readonly ActivityLogger $activity,
+    ) {}
 
     /**
      * Anula una compra: descuenta del stock lo que había sumado y, si esa compra fijó el último
@@ -70,6 +75,14 @@ class CancelPurchase
                 'cancelled_by' => $user->getKey(),
                 'cancellation_reason' => $reason,
             ]);
+
+            $this->activity->log(
+                ActivityEvent::Cancelled,
+                "Anuló la compra #{$locked->getKey()} (factura {$locked->invoice_number}): {$reason}",
+                $locked,
+                ['reason' => $reason, 'total' => $locked->total],
+                $user,
+            );
 
             return $locked->refresh();
         });

@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\AccountMovementType;
+use App\Enums\ActivityEvent;
 use App\Enums\InstallmentStatus;
 use App\Enums\SaleStatus;
 use App\Models\Installment;
@@ -10,12 +11,17 @@ use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\User;
 use App\Services\AccountService;
+use App\Services\ActivityLogger;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CancelPayment
 {
-    public function __construct(private readonly AccountService $accounts) {}
+    public function __construct(
+        private readonly AccountService $accounts,
+        private readonly ActivityLogger $activity,
+    ) {}
 
     /**
      * Anula un cobro: devuelve a cada cuota lo que se le había imputado, reabre las ventas que
@@ -84,6 +90,14 @@ class CancelPayment
                 debit: $locked->amount,
                 reference: $locked,
                 user: $user,
+            );
+
+            $this->activity->log(
+                ActivityEvent::Cancelled,
+                "Anuló el cobro #{$locked->getKey()} de ".Money::format($locked->amount)." a {$locked->customer->name}: {$reason}",
+                $locked,
+                ['reason' => $reason, 'amount' => $locked->amount],
+                $user,
             );
 
             return $locked->refresh();
