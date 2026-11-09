@@ -14,7 +14,7 @@ configuración y el tag de git (`vX.Y.Z`).
 ## [Sin publicar]
 
 ### Cambiado
-- Cobros: se quita el texto de ayuda de la lista "Cuotas a imputar".
+- Login: el título pasa de "Entre a su cuenta" a "Ingrese a su cuenta".
 
 ## [0.1.0] - 2026-11-09
 
