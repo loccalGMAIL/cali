@@ -2,6 +2,9 @@
 
 return [
 
+    // Versión vigente (semántica). Debe coincidir con el CHANGELOG.md y con el tag de git.
+    'version' => '0.1.0',
+
     // Usuario administrador inicial (lo crea DatabaseSeeder).
     'admin' => [
         'name' => env('ADMIN_NAME', 'Administrador'),

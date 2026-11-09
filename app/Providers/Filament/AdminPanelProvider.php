@@ -11,6 +11,7 @@ use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -31,6 +32,8 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandLogo(fn (): View => view('filament.admin.logo'))
             ->brandLogoHeight(fn (): string => auth()->guest() ? '3.25rem' : '2rem')
+            ->renderHook(PanelsRenderHook::FOOTER, fn (): View => view('filament.admin.version'))
+            ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn (): View => view('filament.admin.version'))
             ->navigationGroups([
                 NavigationGroup::make('Ventas'),
                 NavigationGroup::make('Stock'),
