@@ -32,12 +32,12 @@ beforeEach(function () {
 });
 
 /**
- * Venta de 1000 (costo 600) en 3 cuotas con 20% de recargo.
+ * Venta de costo 600 + margen 600 = 1200 en 3 cuotas de 400.
  */
 function logSale(Customer $customer, User $user): Sale
 {
-    $plan = FinancingPlan::factory()->create(['installments_count' => 3, 'surcharge_percent' => 20]);
-    $product = Product::factory()->create(['stock' => 10, 'last_cost' => 600]);
+    $plan = FinancingPlan::factory()->create(['installments_count' => 3]);
+    $product = Product::factory()->create(['last_cost' => 600]);
 
     return app(CreateSale::class)->handle([
         'customer_id' => $customer->id,
@@ -46,7 +46,7 @@ function logSale(Customer $customer, User $user): Sale
         'date' => today()->toDateString(),
         'first_due_date' => today()->addMonth()->toDateString(),
         'down_payment' => 0,
-    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_price' => 1000]], $user);
+    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 600]], $user);
 }
 
 it('registra el ingreso de un usuario', function () {
@@ -140,11 +140,11 @@ it('nunca guarda contraseñas: solo deja constancia de que cambiaron', function 
         ->and(json_encode(ActivityLog::all()->toArray()))->not->toContain('otra-clave-secreta')->not->toContain('nueva-clave-secreta');
 });
 
-it('no registra los cambios de stock, que son derivados', function () {
-    $product = Product::factory()->create(['stock' => 5]);
+it('no registra los cambios del último costo, que vienen de las facturas', function () {
+    $product = Product::factory()->create(['last_cost' => 500]);
     ActivityLog::query()->delete();
 
-    $product->update(['stock' => 3]);
+    $product->update(['last_cost' => 600]);
 
     expect(ActivityLog::count())->toBe(0);
 
@@ -197,16 +197,24 @@ it('registra la anulación de una venta', function () {
         ->and($log->description)->toContain("venta #{$sale->id}")->toContain('El cliente se arrepintió');
 });
 
-it('registra una compra y su anulación', function () {
+it('registra la orden de compra, su factura y la anulación', function () {
     $supplier = Supplier::factory()->create(['name' => 'Distribuidora Sur']);
-    $product = Product::factory()->create(['stock' => 0]);
+    $product = Product::factory()->create();
+    $item = soldItem($this->admin, $product, 2);
     ActivityLog::query()->delete();
 
+    $order = issuedOrder($this->admin, $supplier, [$item]);
     $purchase = app(CreatePurchase::class)->handle([
-        'supplier_id' => $supplier->id,
+        'purchase_order_id' => $order->id,
         'date' => today()->toDateString(),
         'invoice_number' => 'A-1',
     ], [['product_id' => $product->id, 'quantity' => 2, 'unit_cost' => 500]], $this->admin);
+
+    $orderLogs = ActivityLog::where('subject_type', $order->getMorphClass())->orderBy('id')->get();
+
+    expect($orderLogs)->toHaveCount(2)
+        ->and($orderLogs[0]->description)->toContain("orden de compra #{$order->id}")->toContain('Distribuidora Sur')->toContain('2 unidades')
+        ->and($orderLogs[1]->description)->toContain('Emitió');
 
     app(CancelPurchase::class)->handle($purchase, 'Factura equivocada', $this->admin);
 
@@ -220,13 +228,15 @@ it('registra una compra y su anulación', function () {
 
 it('si la operación se revierte, el registro también', function () {
     $supplier = Supplier::factory()->create();
-    $product = Product::factory()->create(['stock' => 0]);
+    $product = Product::factory()->create();
+    $item = soldItem($this->admin, $product, 5);
+    $order = issuedOrder($this->admin, $supplier, [$item]);
     $purchase = app(CreatePurchase::class)->handle([
-        'supplier_id' => $supplier->id,
+        'purchase_order_id' => $order->id,
         'date' => today()->toDateString(),
         'invoice_number' => 'A-1',
-    ], [['product_id' => $product->id, 'quantity' => 5, 'unit_cost' => 100]], $this->admin);
-    $product->update(['stock' => 1]); // ya se vendió casi todo: no se puede anular
+    ], [['product_id' => $product->id, 'quantity' => 4, 'unit_cost' => 100]], $this->admin);
+    issuedOrder($this->admin, $supplier, [$item]); // lo que faltó ya se volvió a pedir: no se puede anular
     ActivityLog::query()->delete();
 
     expect(fn () => app(CancelPurchase::class)->handle($purchase, 'Error', $this->admin))->toThrow(ValidationException::class);

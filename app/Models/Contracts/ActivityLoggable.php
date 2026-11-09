@@ -19,7 +19,7 @@ interface ActivityLoggable
     public function activityTitle(): string;
 
     /**
-     * Atributos que cambian solos (por ejemplo el stock) y no deben ensuciar el historial.
+     * Atributos que cambian solos (por ejemplo el último costo) y no deben ensuciar el historial.
      *
      * @return list<string>
      */

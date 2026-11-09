@@ -4,8 +4,9 @@ namespace App\Services;
 
 use App\Models\Installment;
 use App\Models\Payment;
-use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\PurchaseOrder;
+use App\Models\SaleItem;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -73,18 +74,29 @@ class DashboardMetrics
     }
 
     /**
-     * Valor del stock a último costo: Σ stock × último costo.
+     * Lo vendido que todavía no se incluyó en una orden de compra: unidades y costo estimado
+     * (con el costo cargado en cada venta).
+     *
+     * @return array{units: int, cost: string}
      */
-    public function stockValue(): string
+    public function pendingPurchase(): array
     {
-        return $this->decimal(
-            Product::query()->where('stock', '>', 0)->selectRaw('COALESCE(SUM(stock * last_cost), 0) as value')->value('value'),
-        );
+        $row = SaleItem::query()->pendingPurchase()
+            ->selectRaw('COALESCE(SUM(pending_quantity), 0) as units, COALESCE(SUM(pending_quantity * unit_cost), 0) as cost')
+            ->first();
+
+        return [
+            'units' => (int) ($row?->getAttribute('units') ?? 0),
+            'cost' => $this->decimal($row?->getAttribute('cost')),
+        ];
     }
 
-    public function lowStockCount(): int
+    /**
+     * Órdenes de compra en borrador o emitidas, todavía sin factura.
+     */
+    public function openPurchaseOrdersCount(): int
     {
-        return Product::query()->active()->lowStock()->count();
+        return PurchaseOrder::query()->open()->count();
     }
 
     /**

@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\PriceMode;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Customers\Pages\CreateCustomer;
 use App\Filament\Resources\FinancingPlans\FinancingPlanResource;
@@ -70,48 +69,31 @@ it('crea un proveedor', function () {
     expect(Supplier::where('name', 'Distribuidora Sur')->exists())->toBeTrue();
 });
 
-it('crea un producto en modo automático calculando el precio', function () {
+it('crea un producto con su proveedor habitual y sin costo cargado a mano', function () {
     $this->actingAs(User::factory()->admin()->create());
+    $supplier = Supplier::factory()->create();
 
     Livewire::test(CreateProduct::class)
         ->fillForm([
             'sku' => 'HE-0001',
             'name' => 'Heladera 300L',
+            'supplier_id' => $supplier->id,
             'last_cost' => 500000,
-            'margin_percent' => 40,
-            'price_mode' => PriceMode::Auto->value,
-            'min_stock' => 1,
         ])
         ->call('create')
         ->assertHasNoFormErrors();
 
-    expect(Product::where('sku', 'HE-0001')->firstOrFail()->sale_price)->toBe('700000.00');
-});
+    $product = Product::where('sku', 'HE-0001')->firstOrFail();
 
-it('exige precio en modo manual', function () {
-    $this->actingAs(User::factory()->admin()->create());
-
-    Livewire::test(CreateProduct::class)
-        ->fillForm([
-            'sku' => 'LV-0001',
-            'name' => 'Lavarropas',
-            'last_cost' => 300000,
-            'margin_percent' => 30,
-            'price_mode' => PriceMode::Manual->value,
-            'sale_price' => 450000,
-            'min_stock' => 0,
-        ])
-        ->call('create')
-        ->assertHasNoFormErrors();
-
-    expect(Product::where('sku', 'LV-0001')->firstOrFail()->sale_price)->toBe('450000.00');
+    expect($product->supplier_id)->toBe($supplier->id)
+        ->and($product->last_cost)->toBe('0.00'); // el costo lo fija la factura de compra
 });
 
 it('crea un plan de financiación', function () {
     $this->actingAs(User::factory()->admin()->create());
 
     Livewire::test(CreateFinancingPlan::class)
-        ->fillForm(['name' => '12 cuotas', 'installments_count' => 12, 'surcharge_percent' => 60])
+        ->fillForm(['name' => '12 cuotas', 'installments_count' => 12])
         ->call('create')
         ->assertHasNoFormErrors();
 
@@ -137,24 +119,21 @@ it('crea un vendedor con contraseña hasheada', function () {
         ->and(Hash::check('secreto123', $user->password))->toBeTrue();
 });
 
-it('crea un producto sin código ni stock mínimo', function () {
+it('crea un producto sin código ni proveedor habitual', function () {
     $this->actingAs(User::factory()->admin()->create());
 
     Livewire::test(CreateProduct::class)
         ->fillForm([
             'name' => 'Microondas',
             'sku' => null,
-            'min_stock' => null,
-            'last_cost' => 100000,
-            'margin_percent' => 30,
-            'price_mode' => PriceMode::Auto->value,
+            'supplier_id' => null,
         ])
         ->call('create')
         ->assertHasNoFormErrors();
 
     $product = Product::where('name', 'Microondas')->firstOrFail();
     expect($product->sku)->toBeNull()
-        ->and($product->min_stock)->toBe(0);
+        ->and($product->supplier_id)->toBeNull();
 
     Product::factory()->create(['sku' => null]);
     expect(Product::whereNull('sku')->count())->toBe(2);

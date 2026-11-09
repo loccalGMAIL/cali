@@ -19,11 +19,11 @@ use Livewire\Livewire;
 beforeEach(function () {
     Filament::setCurrentPanel('admin');
     $this->customer = Customer::factory()->create();
-    $this->plan = FinancingPlan::factory()->create(['installments_count' => 3, 'surcharge_percent' => 20]);
-    $this->product = Product::factory()->manualPrice(1000)->create(['stock' => 5, 'last_cost' => 600]);
+    $this->plan = FinancingPlan::factory()->create(['installments_count' => 3]);
+    $this->product = Product::factory()->create(['last_cost' => 600]);
 });
 
-it('carga una venta desde el panel y deja cuotas, stock y cuenta corriente', function () {
+it('carga una venta desde el panel con costo y margen, y deja cuotas y pendientes de compra', function () {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin);
 
@@ -36,18 +36,20 @@ it('carga una venta desde el panel y deja cuotas, stock y cuenta corriente', fun
             'first_due_date' => '2026-12-07',
             'down_payment' => 200,
             'down_payment_method' => 'cash',
-            'items' => [['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000]],
+            'items' => [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 500]],
         ])
         ->call('create')
         ->assertHasNoFormErrors();
 
+    // (600 + 500 − 200) ÷ 3 = 300
     $sale = Sale::firstOrFail();
-    expect($sale->total)->toBe('1160.00')
-        ->and($sale->installments)->toHaveCount(3)
-        ->and($this->product->fresh()->stock)->toBe(4);
+    expect($sale->total)->toBe('1100.00')
+        ->and($sale->total_cost)->toBe('600.00')
+        ->and($sale->installments->pluck('amount')->all())->toBe(['300.00', '300.00', '300.00'])
+        ->and($sale->items->first()->pending_quantity)->toBe(1);
 });
 
-it('muestra el error de stock insuficiente en el formulario', function () {
+it('muestra en el formulario el error de un anticipo mayor al total', function () {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin);
 
@@ -58,10 +60,11 @@ it('muestra el error de stock insuficiente en el formulario', function () {
             'financing_plan_id' => $this->plan->id,
             'date' => '2026-11-07',
             'first_due_date' => '2026-12-07',
-            'items' => [['product_id' => $this->product->id, 'quantity' => 99, 'unit_price' => 1000]],
+            'down_payment' => 5000,
+            'items' => [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 400]],
         ])
         ->call('create')
-        ->assertHasFormErrors(['items']);
+        ->assertHasFormErrors(['down_payment']);
 
     expect(Sale::count())->toBe(0);
 });
@@ -78,7 +81,7 @@ it('fuerza al vendedor a registrar la venta a su nombre', function () {
             'financing_plan_id' => $this->plan->id,
             'date' => '2026-11-07',
             'first_due_date' => '2026-12-07',
-            'items' => [['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000]],
+            'items' => [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 400]],
         ])
         ->call('create');
 
@@ -116,21 +119,24 @@ it('no permite editar ni borrar ventas confirmadas', function () {
 
 it('la vista previa muestra total, cuota y cronograma', function () {
     $html = (string) SalePreview::render(
-        [['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000]],
+        [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 560]],
         $this->plan->id,
         '2026-12-07',
         200,
     );
 
+    // (600 + 560 − 200) ÷ 3 = 320
     expect($html)->toContain('$ 1.160,00')
+        ->and($html)->toContain('$ 560,00')
+        ->and($html)->toContain('$ 960,00')
         ->and($html)->toContain('3 cuotas de $ 320,00')
         ->and($html)->toContain('07/12/2026')
         ->and($html)->toContain('07/02/2027');
 });
 
-it('la vista previa avisa si el anticipo supera el precio', function () {
+it('la vista previa avisa si el anticipo supera el total', function () {
     $html = (string) SalePreview::render(
-        [['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000]],
+        [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 400]],
         $this->plan->id,
         '2026-12-07',
         5000,
@@ -143,7 +149,7 @@ it('la vista previa pide completar datos si faltan', function () {
     expect((string) SalePreview::render([], null, null, 0))->toContain('Elegí al menos un producto');
 });
 
-it('anula una venta desde la tabla y devuelve el stock', function () {
+it('anula una venta desde la tabla y la saca de pendientes de compra', function () {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin);
 
@@ -154,14 +160,14 @@ it('anula una venta desde la tabla y devuelve el stock', function () {
         'date' => '2026-11-07',
         'first_due_date' => '2026-12-07',
         'down_payment' => 0,
-    ], [['product_id' => $this->product->id, 'quantity' => 2, 'unit_price' => 1000]], $admin);
+    ], [['product_id' => $this->product->id, 'quantity' => 2, 'unit_cost' => 600, 'unit_margin' => 400]], $admin);
 
     Livewire::test(ListSales::class)
         ->callAction(TestAction::make('cancel')->table($sale), data: ['reason' => 'Error de carga'])
         ->assertNotified('Anulación registrada');
 
     expect($sale->fresh()->isCancelled())->toBeTrue()
-        ->and($this->product->fresh()->stock)->toBe(5);
+        ->and($sale->items->first()->fresh()->pending_quantity)->toBe(0);
 });
 
 it('exige el motivo para anular una venta', function () {
@@ -199,7 +205,7 @@ it('avisa en pantalla si la venta tiene cobros imputados', function () {
         'date' => '2026-11-07',
         'first_due_date' => '2026-12-07',
         'down_payment' => 0,
-    ], [['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000]], $admin);
+    ], [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 400]], $admin);
     app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 100], $admin);
 
     Livewire::test(ViewSale::class, ['record' => $sale->getKey()])

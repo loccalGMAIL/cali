@@ -37,7 +37,7 @@ class SalePolicy
     }
 
     /**
-     * Anular una venta revierte stock, cuotas y cuenta corriente: solo el admin.
+     * Anular una venta revierte cuotas, cuenta corriente y pendientes de compra: solo el admin.
      */
     public function cancel(User $user, Sale $sale): bool
     {

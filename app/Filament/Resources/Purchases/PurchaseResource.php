@@ -22,13 +22,15 @@ class PurchaseResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Stock';
+    protected static string|UnitEnum|null $navigationGroup = 'Compras';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3;
 
-    protected static ?string $modelLabel = 'Compra';
+    protected static ?string $navigationLabel = 'Facturas de compra';
 
-    protected static ?string $pluralModelLabel = 'Compras';
+    protected static ?string $modelLabel = 'Factura de compra';
+
+    protected static ?string $pluralModelLabel = 'Facturas de compra';
 
     protected static ?string $recordTitleAttribute = 'invoice_number';
 

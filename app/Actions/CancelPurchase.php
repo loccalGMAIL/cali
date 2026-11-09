@@ -3,29 +3,31 @@
 namespace App\Actions;
 
 use App\Enums\ActivityEvent;
-use App\Enums\StockMovementType;
+use App\Enums\PurchaseOrderStatus;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
+use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Services\ActivityLogger;
-use App\Services\StockService;
+use App\Services\PendingPurchaseService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CancelPurchase
 {
     public function __construct(
-        private readonly StockService $stock,
+        private readonly PendingPurchaseService $pending,
         private readonly ActivityLogger $activity,
     ) {}
 
     /**
-     * Anula una compra: descuenta del stock lo que había sumado y, si esa compra fijó el último
-     * costo de un producto, lo devuelve al de la compra vigente anterior (recalculando el precio
-     * si el producto está en modo automático). La compra no se borra: queda como historial.
+     * Anula una factura de compra: la orden vuelve a quedar emitida (para cargar la factura
+     * correcta), lo que había vuelto a pendiente por faltante se vuelve a descontar y, si esa
+     * compra fijó el último costo de un producto, se vuelve al de la compra vigente anterior.
+     * La compra no se borra: queda como historial.
      *
-     * No se puede anular si parte de la mercadería ya se vendió (el stock no alcanzaría).
+     * No se puede anular si un faltante de esta factura ya se incluyó en otra orden de compra.
      *
      * @throws ValidationException
      */
@@ -38,43 +40,29 @@ class CancelPurchase
                 throw ValidationException::withMessages(['purchase' => 'Esta compra ya está anulada.']);
             }
 
-            $quantities = $locked->items()->get()
-                ->groupBy('product_id')
-                ->map(fn ($items): int => (int) $items->sum('quantity'))
-                ->sortKeys();
+            $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($locked->purchase_order_id);
 
-            // Bloqueo en orden de id para no cruzarse con otra operación sobre los mismos productos.
-            $products = Product::query()->whereIn('id', $quantities->keys())->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $this->pending->lockSaleItems($order->items()->pluck('sale_item_id')->all());
 
-            $errors = [];
+            $this->pending->undoReceive($order->items()->with(['product', 'saleItem.sale'])->get());
 
-            foreach ($quantities as $productId => $quantity) {
-                $product = $products[$productId];
-
-                if ($product->stock < $quantity) {
-                    $errors[] = "«{$product->name}»: se compraron {$quantity} y solo quedan {$product->stock} en stock";
-                }
-            }
-
-            if ($errors !== []) {
-                throw ValidationException::withMessages([
-                    'purchase' => 'No se puede anular la compra porque parte de la mercadería ya se vendió. '.implode('; ', $errors).'.',
-                ]);
-            }
-
-            foreach ($quantities as $productId => $quantity) {
-                $product = $products[$productId];
-
-                $this->stock->record($product, StockMovementType::Adjustment, -$quantity, $locked, $user, "Anulación de la compra #{$locked->getKey()}");
-
-                $this->restoreLastCost($product, $locked);
-            }
+            $order->update(['status' => PurchaseOrderStatus::Issued]);
 
             $locked->update([
                 'cancelled_at' => now(),
                 'cancelled_by' => $user->getKey(),
                 'cancellation_reason' => $reason,
             ]);
+
+            // Solo los productos que llegaron: esos son los que fijaron un último costo.
+            $products = Product::query()
+                ->whereIn('id', $locked->items()->where('quantity', '>', 0)->pluck('product_id'))
+                ->orderBy('id')
+                ->get();
+
+            foreach ($products as $product) {
+                $this->restoreLastCost($product, $locked);
+            }
 
             $this->activity->log(
                 ActivityEvent::Cancelled,
@@ -96,6 +84,7 @@ class CancelPurchase
     {
         $hasLaterPurchase = PurchaseItem::query()
             ->where('product_id', $product->getKey())
+            ->where('quantity', '>', 0)
             ->whereHas('purchase', fn ($query) => $query->notCancelled()->where('id', '>', $cancelled->getKey()))
             ->exists();
 
@@ -105,6 +94,7 @@ class CancelPurchase
 
         $previous = PurchaseItem::query()
             ->where('product_id', $product->getKey())
+            ->where('quantity', '>', 0)
             ->whereHas('purchase', fn ($query) => $query->notCancelled()->where('id', '<', $cancelled->getKey()))
             ->orderByDesc('purchase_id')
             ->orderByDesc('id')

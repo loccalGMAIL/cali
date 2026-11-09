@@ -8,6 +8,8 @@ use App\Models\Customer;
 use App\Models\FinancingPlan;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\SaleCalculator;
+use App\Support\Money;
 use App\Support\SalePreview;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -45,10 +47,7 @@ class SaleForm
                             ->disabled(fn (): bool => (bool) auth()->user()?->isSeller())
                             ->dehydrated(),
                         Select::make('financing_plan_id')->label('Plan de financiación')
-                            ->options(fn (): array => FinancingPlan::query()->active()->get()
-                                ->mapWithKeys(fn (FinancingPlan $plan): array => [
-                                    $plan->id => "{$plan->name} (recargo ".rtrim(rtrim(number_format((float) $plan->surcharge_percent, 2, ',', '.'), '0'), ',').'%)',
-                                ])->all())
+                            ->options(fn (): array => FinancingPlan::query()->active()->pluck('name', 'id')->all())
                             ->required()->live(),
                         DatePicker::make('date')->label('Fecha de la venta')->default(now())->required(),
                         DatePicker::make('first_due_date')->label('Vencimiento de la primera cuota')
@@ -59,19 +58,23 @@ class SaleForm
                     ->schema([
                         Repeater::make('items')->label('Ítems')
                             ->addActionLabel('Agregar producto')
-                            ->minItems(1)->required()->live()->columns(4)->defaultItems(1)
+                            ->minItems(1)->required()->live()->columns(6)->defaultItems(1)
                             ->schema([
                                 Select::make('product_id')->label('Producto')
-                                    ->options(fn (): array => Product::query()->where('active', true)->where('stock', '>', 0)->orderBy('name')
-                                        ->get()->mapWithKeys(fn (Product $product): array => [$product->id => "{$product->name} (stock {$product->stock})"])->all())
+                                    ->options(fn (): array => Product::query()->active()->orderBy('name')->pluck('name', 'id')->all())
                                     ->searchable()->required()->live()->columnSpan(2)
                                     ->afterStateUpdated(function (?string $state, Set $set): void {
+                                        // Se sugiere el costo de la última factura de compra; se puede cambiar.
                                         if ($state !== null && ($product = Product::find($state))) {
-                                            $set('unit_price', $product->sale_price);
+                                            $set('unit_cost', $product->last_cost);
                                         }
                                     }),
                                 TextInput::make('quantity')->label('Cantidad')->required()->integer()->minValue(1)->default(1)->live(onBlur: true),
-                                TextInput::make('unit_price')->label('Precio unitario')->required()->numeric()->minValue(0)->prefix('$')->live(onBlur: true),
+                                TextInput::make('unit_cost')->label('Costo unitario')->required()->numeric()->minValue(0)->prefix('$')->live(onBlur: true),
+                                TextInput::make('unit_margin')->label('Margen unitario')->required()->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true),
+                                TextEntry::make('unit_price')->label('Precio unitario')
+                                    ->state(fn (Get $get): string => Money::format(self::unitPrice($get('unit_cost'), $get('unit_margin'))))
+                                    ->weight('bold'),
                             ]),
                     ]),
                 Section::make('Pago')
@@ -103,5 +106,13 @@ class SaleForm
                         Textarea::make('notes')->label('Notas')->hiddenLabel(),
                     ]),
             ]);
+    }
+
+    private static function unitPrice(mixed $unitCost, mixed $unitMargin): string
+    {
+        return (new SaleCalculator)->unitPrice(
+            is_numeric($unitCost) ? (string) $unitCost : '0',
+            is_numeric($unitMargin) ? (string) $unitMargin : '0',
+        );
     }
 }

@@ -16,11 +16,17 @@ return new class extends Migration
             $table->foreignId('sale_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_id')->constrained();
             $table->unsignedInteger('quantity');
-            $table->decimal('unit_price', 12, 2);
-            // Costo del producto al momento de la venta.
+            // Precio unitario = costo + margen, ambos cargados al momento de la venta.
             $table->decimal('unit_cost', 12, 2);
+            $table->decimal('unit_margin', 12, 2);
+            $table->decimal('unit_price', 12, 2);
             $table->decimal('subtotal', 12, 2);
+            // Unidades que todavía no se incluyeron en una orden de compra. No hay stock:
+            // todo lo vendido se compra después al proveedor.
+            $table->unsignedInteger('pending_quantity')->default(0);
             $table->timestamps();
+
+            $table->index('pending_quantity');
         });
     }
 

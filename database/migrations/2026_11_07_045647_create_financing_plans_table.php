@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->unsignedSmallInteger('installments_count');
-            $table->decimal('surcharge_percent', 8, 2)->default(0);
             $table->boolean('active')->default(true);
             $table->timestamps();
         });

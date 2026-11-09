@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $unit_cost
  * @property string $subtotal
  */
-#[Fillable(['purchase_id', 'product_id', 'quantity', 'unit_cost', 'subtotal'])]
+#[Fillable(['purchase_id', 'product_id', 'ordered_quantity', 'quantity', 'unit_cost', 'subtotal'])]
 class PurchaseItem extends Model
 {
     /** @use HasFactory<PurchaseItemFactory> */
@@ -24,6 +24,7 @@ class PurchaseItem extends Model
     protected function casts(): array
     {
         return [
+            'ordered_quantity' => 'integer',
             'quantity' => 'integer',
             'unit_cost' => 'decimal:2',
             'subtotal' => 'decimal:2',

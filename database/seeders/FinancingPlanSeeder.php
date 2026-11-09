@@ -13,10 +13,10 @@ class FinancingPlanSeeder extends Seeder
     public function run(): void
     {
         $plans = [
-            ['name' => 'Contado', 'installments_count' => 1, 'surcharge_percent' => 0],
-            ['name' => '3 cuotas', 'installments_count' => 3, 'surcharge_percent' => 15],
-            ['name' => '6 cuotas', 'installments_count' => 6, 'surcharge_percent' => 30],
-            ['name' => '8 cuotas', 'installments_count' => 8, 'surcharge_percent' => 40],
+            ['name' => 'Contado', 'installments_count' => 1],
+            ['name' => '3 cuotas', 'installments_count' => 3],
+            ['name' => '6 cuotas', 'installments_count' => 6],
+            ['name' => '8 cuotas', 'installments_count' => 8],
         ];
 
         foreach ($plans as $plan) {

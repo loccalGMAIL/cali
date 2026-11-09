@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\PriceMode;
 use App\Models\Concerns\LogsActivity;
 use App\Models\Contracts\ActivityLoggable;
 use Database\Factories\ProductFactory;
@@ -11,18 +10,15 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property PriceMode $price_mode
+ * No se maneja stock: todo lo vendido se compra después al proveedor con una orden de compra.
+ * El último costo lo fija la factura de compra más reciente y se sugiere al cargar una venta.
+ *
  * @property string $last_cost
- * @property string $margin_percent
- * @property string $sale_price
  */
-#[Fillable([
-    'sku', 'name', 'brand', 'description', 'active', 'stock', 'min_stock',
-    'last_cost', 'margin_percent', 'price_mode', 'sale_price',
-])]
+#[Fillable(['sku', 'name', 'brand', 'description', 'active', 'supplier_id', 'last_cost'])]
 class Product extends Model implements ActivityLoggable
 {
     /** @use HasFactory<ProductFactory> */
@@ -35,56 +31,18 @@ class Product extends Model implements ActivityLoggable
     {
         return [
             'active' => 'boolean',
-            'stock' => 'integer',
-            'min_stock' => 'integer',
             'last_cost' => 'decimal:2',
-            'margin_percent' => 'decimal:2',
-            'price_mode' => PriceMode::class,
-            'sale_price' => 'decimal:2',
         ];
     }
 
-    protected static function booted(): void
-    {
-        // En modo automático el precio siempre se deriva del costo y el margen.
-        static::saving(function (Product $product): void {
-            if ($product->price_mode === PriceMode::Auto) {
-                $product->sale_price = $product->calculateAutoPrice();
-            }
-        });
-    }
-
     /**
-     * Precio automático: último costo más el margen del producto.
+     * Proveedor habitual del producto.
+     *
+     * @return BelongsTo<Supplier, $this>
      */
-    public function calculateAutoPrice(): string
+    public function supplier(): BelongsTo
     {
-        $price = (float) $this->last_cost * (1 + (float) $this->margin_percent / 100);
-
-        return number_format(round($price, 2), 2, '.', '');
-    }
-
-    /**
-     * @return HasMany<StockMovement, $this>
-     */
-    public function stockMovements(): HasMany
-    {
-        return $this->hasMany(StockMovement::class);
-    }
-
-    public function isLowStock(): bool
-    {
-        return $this->stock < $this->min_stock;
-    }
-
-    /**
-     * @param  Builder<Product>  $query
-     * @return Builder<Product>
-     */
-    #[Scope]
-    protected function lowStock(Builder $query): Builder
-    {
-        return $query->whereColumn('stock', '<', 'min_stock');
+        return $this->belongsTo(Supplier::class);
     }
 
     /**
@@ -108,10 +66,12 @@ class Product extends Model implements ActivityLoggable
     }
 
     /**
+     * El último costo cambia solo con cada factura de compra: no ensucia el historial.
+     *
      * @return list<string>
      */
     public function activityIgnoredAttributes(): array
     {
-        return ['stock'];
+        return ['last_cost'];
     }
 }

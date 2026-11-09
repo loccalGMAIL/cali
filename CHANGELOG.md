@@ -13,6 +13,40 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.2.0] - 2026-11-09
+
+Cambia el circuito de compras: el negocio no maneja stock. Primero se vende y después se le
+compra al proveedor lo vendido. **Requiere recrear la base** (`php artisan migrate:fresh --seed`):
+se editaron las migraciones originales y se pierden los datos cargados.
+
+### Agregado
+- **Pendientes de compra**: todo lo vendido queda pendiente hasta que se incluye en una orden de
+  compra. Lista con filtro por proveedor habitual y acción para armar una orden con lo elegido.
+- **Órdenes de compra** por proveedor: se arman eligiendo qué ítems vendidos comprar (o con
+  "Agregar pendientes de este proveedor"), se editan mientras no tengan factura, se emiten, se
+  imprimen para llevar al proveedor y se anulan (lo pedido vuelve a pendiente).
+- Proveedor habitual en cada producto.
+- Dashboard: "Pendiente de compra", "Órdenes sin recibir" y tabla de pendientes de compra.
+
+### Cambiado
+- **Venta**: cada ítem se carga con costo y margen; precio = costo + margen. El costo se sugiere
+  con el de la última factura de compra y se puede cambiar.
+- **Cuotas**: (costo + margen − anticipo) ÷ cantidad de cuotas. Los planes de financiación ya no
+  tienen recargo: solo definen la cantidad de cuotas.
+- **Factura de compra**: se carga desde una orden de compra con lo pedido precargado. Se corrige lo
+  que llegó y el faltante vuelve a pendiente (se completan primero las ventas más antiguas). El
+  costo de la factura queda como último costo del producto; las ventas ya hechas no cambian.
+- Anular una factura deja la orden emitida otra vez. Anular una venta la saca de pendientes (lo que
+  ya estaba en una orden queda en la orden).
+- El menú "Stock" pasa a llamarse "Compras".
+- Datos de demostración armados con el circuito nuevo: órdenes semanales por proveedor, una factura
+  con faltante, una orden emitida sin factura y otra en borrador.
+
+### Quitado
+- Stock, stock mínimo, movimientos de stock y el widget de stock bajo.
+- Margen %, modo de precio y precio de venta del producto.
+- Recargo de los planes de financiación.
+
 ## [0.1.1] - 2026-11-09
 
 ### Agregado
@@ -104,6 +138,7 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.1.1...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/loccalGMAIL/cali/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/loccalGMAIL/cali/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/loccalGMAIL/cali/releases/tag/v0.1.0

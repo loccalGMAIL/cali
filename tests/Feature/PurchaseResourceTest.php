@@ -1,5 +1,8 @@
 <?php
 
+use App\Actions\CreatePurchase as CreatePurchaseAction;
+use App\Actions\CreatePurchaseOrder;
+use App\Enums\PurchaseOrderStatus;
 use App\Filament\Resources\Purchases\Pages\CreatePurchase;
 use App\Filament\Resources\Purchases\Pages\ListPurchases;
 use App\Filament\Resources\Purchases\Pages\ViewPurchase;
@@ -14,69 +17,112 @@ use Livewire\Livewire;
 
 beforeEach(function () {
     Filament::setCurrentPanel('admin');
+    $this->admin = User::factory()->admin()->create();
+    $this->supplier = Supplier::factory()->create();
+    $this->product = Product::factory()->create(['last_cost' => 1000]);
 });
 
-it('carga una compra desde el panel y actualiza stock, costo y precio', function () {
-    $admin = User::factory()->admin()->create();
-    $this->actingAs($admin);
-    $supplier = Supplier::factory()->create();
-    $product = Product::factory()->create(['stock' => 1, 'last_cost' => 1000, 'margin_percent' => 20]);
+it('carga la factura desde la orden con lo pedido precargado y corrige lo que llegó', function () {
+    $this->actingAs($this->admin);
+    $item = soldItem($this->admin, $this->product, 4, 1000);
+    $order = issuedOrder($this->admin, $this->supplier, [$item]);
 
-    Livewire::test(CreatePurchase::class)
+    $page = Livewire::test(CreatePurchase::class, ['orderId' => (string) $order->id])
+        ->assertSchemaStateSet(['purchase_order_id' => (string) $order->id]);
+
+    $key = array_key_first($page->get('data.items'));
+
+    $page->assertSchemaStateSet([
+        "items.{$key}.product_id" => $this->product->id,
+        "items.{$key}.ordered_quantity" => 4,
+        "items.{$key}.quantity" => 4,
+        "items.{$key}.unit_cost" => '1000.00',
+    ])
         ->fillForm([
-            'supplier_id' => $supplier->id,
             'invoice_number' => 'A-0001',
-            'date' => '2026-11-02',
-            'items' => [
-                ['product_id' => $product->id, 'quantity' => 4, 'unit_cost' => 1500],
-            ],
+            'date' => '2026-11-05',
+            "items.{$key}.quantity" => 3,
+            "items.{$key}.unit_cost" => 1500,
         ])
         ->call('create')
         ->assertHasNoFormErrors();
 
     $purchase = Purchase::where('invoice_number', 'A-0001')->firstOrFail();
-    $product->refresh();
 
-    expect($purchase->total)->toBe('6000.00')
-        ->and($purchase->user_id)->toBe($admin->id)
-        ->and($product->stock)->toBe(5)
-        ->and($product->last_cost)->toBe('1500.00')
-        ->and($product->sale_price)->toBe('1800.00');
+    expect($purchase->total)->toBe('4500.00')
+        ->and($purchase->user_id)->toBe($this->admin->id)
+        ->and($purchase->supplier_id)->toBe($this->supplier->id)
+        ->and($order->fresh()->status)->toBe(PurchaseOrderStatus::Received)
+        ->and($item->fresh()->pending_quantity)->toBe(1)
+        ->and($this->product->fresh()->last_cost)->toBe('1500.00');
+});
+
+it('al elegir la orden se cargan sus productos', function () {
+    $this->actingAs($this->admin);
+    $order = issuedOrder($this->admin, $this->supplier, [soldItem($this->admin, $this->product, 2)]);
+
+    $page = Livewire::test(CreatePurchase::class)->fillForm(['purchase_order_id' => $order->id]);
+
+    expect(array_values($page->get('data.items')))->toHaveCount(1)
+        ->and(array_values($page->get('data.items'))[0]['ordered_quantity'])->toBe(2);
+});
+
+it('muestra error de formulario si llega más de lo pedido', function () {
+    $this->actingAs($this->admin);
+    $order = issuedOrder($this->admin, $this->supplier, [soldItem($this->admin, $this->product, 2)]);
+
+    $page = Livewire::test(CreatePurchase::class, ['orderId' => (string) $order->id]);
+    $key = array_key_first($page->get('data.items'));
+
+    $page->fillForm(['invoice_number' => 'A-1', "items.{$key}.quantity" => 3])
+        ->call('create')
+        ->assertHasFormErrors(["items.{$key}.quantity"]);
+
+    expect(Purchase::count())->toBe(0);
 });
 
 it('muestra error de formulario con factura repetida del mismo proveedor', function () {
-    $this->actingAs(User::factory()->admin()->create());
-    $supplier = Supplier::factory()->create();
-    $product = Product::factory()->create();
-    Purchase::factory()->create(['supplier_id' => $supplier->id, 'invoice_number' => 'A-0001']);
+    $this->actingAs($this->admin);
+    $first = issuedOrder($this->admin, $this->supplier, [soldItem($this->admin, $this->product)]);
+    $second = issuedOrder($this->admin, $this->supplier, [soldItem($this->admin, $this->product)]);
+    app(CreatePurchaseAction::class)->handle(
+        ['purchase_order_id' => $first->id, 'date' => '2026-11-05', 'invoice_number' => 'A-0001'],
+        [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 100]],
+        $this->admin,
+    );
 
-    Livewire::test(CreatePurchase::class)
-        ->fillForm([
-            'supplier_id' => $supplier->id,
-            'invoice_number' => 'A-0001',
-            'date' => '2026-11-02',
-            'items' => [['product_id' => $product->id, 'quantity' => 1, 'unit_cost' => 100]],
-        ])
+    Livewire::test(CreatePurchase::class, ['orderId' => (string) $second->id])
+        ->fillForm(['invoice_number' => 'A-0001'])
         ->call('create')
         ->assertHasFormErrors(['invoice_number' => 'unique']);
 });
 
-it('exige al menos un producto', function () {
-    $this->actingAs(User::factory()->admin()->create());
+it('solo ofrece las órdenes abiertas', function () {
+    $this->actingAs($this->admin);
+    $open = app(CreatePurchaseOrder::class)->handle(
+        ['supplier_id' => $this->supplier->id, 'date' => '2026-11-02'],
+        [['sale_item_id' => soldItem($this->admin, $this->product)->id, 'quantity' => 1]],
+        $this->admin,
+    );
+    $received = issuedOrder($this->admin, $this->supplier, [soldItem($this->admin, $this->product)]);
+    app(CreatePurchaseAction::class)->handle(
+        ['purchase_order_id' => $received->id, 'date' => '2026-11-05', 'invoice_number' => 'X-1'],
+        [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 100]],
+        $this->admin,
+    );
 
     Livewire::test(CreatePurchase::class)
-        ->fillForm([
-            'supplier_id' => Supplier::factory()->create()->id,
-            'invoice_number' => 'A-0002',
-            'date' => '2026-11-02',
-            'items' => [],
-        ])
+        ->fillForm(['purchase_order_id' => $received->id, 'invoice_number' => 'X-2'])
         ->call('create')
-        ->assertHasFormErrors(['items']);
+        ->assertHasFormErrors(['purchase_order_id']);
+
+    Livewire::test(CreatePurchase::class)
+        ->fillForm(['purchase_order_id' => $open->id])
+        ->assertHasNoFormErrors();
 });
 
 it('lista y muestra el detalle de una compra', function () {
-    $this->actingAs(User::factory()->admin()->create());
+    $this->actingAs($this->admin);
     $purchase = Purchase::factory()->create(['invoice_number' => 'B-0001']);
 
     Livewire::test(ListPurchases::class)->assertCanSeeTableRecords([$purchase]);
@@ -84,7 +130,7 @@ it('lista y muestra el detalle de una compra', function () {
 });
 
 it('no permite editar ni borrar compras, ni al admin', function () {
-    $this->actingAs(User::factory()->admin()->create());
+    $this->actingAs($this->admin);
     $purchase = Purchase::factory()->create();
 
     expect(PurchaseResource::canEdit($purchase))->toBeFalse()
@@ -98,68 +144,33 @@ it('no permite a un vendedor acceder a compras', function () {
         ->and(PurchaseResource::canCreate())->toBeFalse();
 });
 
-it('permite crear un proveedor desde el formulario de compra', function () {
-    $this->actingAs(User::factory()->admin()->create());
-
-    Livewire::test(CreatePurchase::class)
-        ->callAction(
-            TestAction::make('createOption')->schemaComponent('supplier_id'),
-            data: ['name' => 'Proveedor Nuevo', 'cuit' => '30-11111111-1', 'active' => true],
-        )
-        ->assertHasNoFormErrors();
-
-    expect(Supplier::where('name', 'Proveedor Nuevo')->exists())->toBeTrue();
-});
-
-it('permite crear un producto desde el formulario de compra', function () {
-    $this->actingAs(User::factory()->admin()->create());
-
-    Livewire::test(CreatePurchase::class)
-        ->fillForm(['items' => [['product_id' => null, 'quantity' => 1, 'unit_cost' => 0]]])
-        ->callAction(
-            TestAction::make('createOption')->schemaComponent('items.0.product_id'),
-            data: [
-                'name' => 'Producto Nuevo',
-                'last_cost' => 1000,
-                'margin_percent' => 10,
-                'price_mode' => 'auto',
-                'min_stock' => 0,
-                'active' => true,
-            ],
-        )
-        ->assertHasNoFormErrors();
-
-    expect(Product::where('name', 'Producto Nuevo')->firstOrFail()->sale_price)->toBe('1100.00');
-});
-
-it('anula una compra desde la tabla y descuenta el stock', function () {
-    $admin = User::factory()->admin()->create();
-    $this->actingAs($admin);
-    $product = Product::factory()->create(['stock' => 0]);
-    $purchase = app(App\Actions\CreatePurchase::class)->handle([
-        'supplier_id' => Supplier::factory()->create()->id,
-        'date' => '2026-11-02',
-        'invoice_number' => 'Z-1',
-    ], [['product_id' => $product->id, 'quantity' => 3, 'unit_cost' => 100]], $admin);
+it('anula una compra desde la tabla y la orden vuelve a quedar emitida', function () {
+    $this->actingAs($this->admin);
+    $order = issuedOrder($this->admin, $this->supplier, [soldItem($this->admin, $this->product, 3)]);
+    $purchase = app(CreatePurchaseAction::class)->handle(
+        ['purchase_order_id' => $order->id, 'date' => '2026-11-05', 'invoice_number' => 'Z-1'],
+        [['product_id' => $this->product->id, 'quantity' => 3, 'unit_cost' => 100]],
+        $this->admin,
+    );
 
     Livewire::test(ListPurchases::class)
         ->callAction(TestAction::make('cancel')->table($purchase), data: ['reason' => 'Factura equivocada'])
         ->assertNotified('Anulación registrada');
 
     expect($purchase->fresh()->isCancelled())->toBeTrue()
-        ->and($product->fresh()->stock)->toBe(0);
+        ->and($order->fresh()->status)->toBe(PurchaseOrderStatus::Issued);
 });
 
-it('avisa en pantalla si ya se vendió parte de lo comprado', function () {
-    $admin = User::factory()->admin()->create();
-    $this->actingAs($admin);
-    $product = Product::factory()->create(['stock' => 0]);
-    $purchase = app(App\Actions\CreatePurchase::class)->handle([
-        'supplier_id' => Supplier::factory()->create()->id,
-        'date' => '2026-11-02',
-        'invoice_number' => 'Z-2',
-    ], [['product_id' => $product->id, 'quantity' => 3, 'unit_cost' => 100]], $admin);
-    $product->update(['stock' => 1]);
+it('avisa en pantalla si lo que faltó ya se volvió a pedir', function () {
+    $this->actingAs($this->admin);
+    $item = soldItem($this->admin, $this->product, 3);
+    $order = issuedOrder($this->admin, $this->supplier, [$item]);
+    $purchase = app(CreatePurchaseAction::class)->handle(
+        ['purchase_order_id' => $order->id, 'date' => '2026-11-05', 'invoice_number' => 'Z-2'],
+        [['product_id' => $this->product->id, 'quantity' => 2, 'unit_cost' => 100]],
+        $this->admin,
+    );
+    issuedOrder($this->admin, $this->supplier, [$item]);
 
     Livewire::test(ViewPurchase::class, ['record' => $purchase->getKey()])
         ->callAction('cancel', data: ['reason' => 'Error'])
@@ -169,7 +180,7 @@ it('avisa en pantalla si ya se vendió parte de lo comprado', function () {
 });
 
 it('no ofrece anular una compra ya anulada', function () {
-    $this->actingAs(User::factory()->admin()->create());
+    $this->actingAs($this->admin);
     $purchase = Purchase::factory()->create(['cancelled_at' => now()]);
 
     Livewire::test(ListPurchases::class)->assertActionHidden(TestAction::make('cancel')->table($purchase));

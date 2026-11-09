@@ -7,7 +7,6 @@ use App\Enums\ActivityEvent;
 use App\Enums\InstallmentStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
-use App\Enums\StockMovementType;
 use App\Models\Customer;
 use App\Models\FinancingPlan;
 use App\Models\Payment;
@@ -17,7 +16,6 @@ use App\Models\User;
 use App\Services\AccountService;
 use App\Services\ActivityLogger;
 use App\Services\SaleCalculator;
-use App\Services\StockService;
 use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -29,14 +27,15 @@ class CreateSale
     public function __construct(
         private readonly SaleCalculator $calculator,
         private readonly AccountService $accounts,
-        private readonly StockService $stock,
         private readonly ActivityLogger $activity,
     ) {}
 
     /**
-     * Confirma una venta: valida y descuenta stock, congela el plan, genera las cuotas,
-     * registra el anticipo como cobro y deja los movimientos en la cuenta corriente.
-     * Todo ocurre en una única transacción.
+     * Confirma una venta: congela el plan, genera las cuotas, registra el anticipo como cobro,
+     * deja los movimientos en la cuenta corriente y marca lo vendido como pendiente de compra
+     * (no hay stock: todo se le pide después al proveedor). Todo ocurre en una única transacción.
+     *
+     * Cada ítem vale costo + margen, ambos cargados al vender.
      *
      * @param  array{
      *     customer_id: int,
@@ -48,7 +47,7 @@ class CreateSale
      *     down_payment_method?: PaymentMethod|string|null,
      *     notes?: string|null
      * }  $data
-     * @param  list<array{product_id: int, quantity: int, unit_price: string|int|float}>  $items
+     * @param  list<array{product_id: int, quantity: int, unit_cost: string|int|float, unit_margin: string|int|float}>  $items
      *
      * @throws ValidationException
      */
@@ -58,23 +57,23 @@ class CreateSale
             throw ValidationException::withMessages(['items' => 'La venta necesita al menos un producto.']);
         }
 
+        $this->ensureItemsAreValid($items);
+
         return DB::transaction(function () use ($data, $items, $user): Sale {
             $customer = Customer::query()->findOrFail($data['customer_id']);
             $plan = FinancingPlan::query()->findOrFail($data['financing_plan_id']);
 
-            $products = $this->lockAndCheckStock($items);
-
             $lines = array_map(fn (array $item): array => [
                 'quantity' => (int) $item['quantity'],
-                'unit_price' => $item['unit_price'],
-                'unit_cost' => $products[$item['product_id']]->last_cost,
+                'unit_cost' => $this->money($item['unit_cost']),
+                'unit_margin' => $this->money($item['unit_margin']),
+                'unit_price' => $this->calculator->unitPrice($item['unit_cost'], $item['unit_margin']),
             ], $items);
 
             try {
                 $result = $this->calculator->calculate(
                     $lines,
                     $data['down_payment'] ?? 0,
-                    $plan->surcharge_percent,
                     $plan->installments_count,
                     $data['first_due_date'],
                 );
@@ -88,24 +87,26 @@ class CreateSale
                 'date' => $data['date'],
                 'financing_plan_id' => $plan->getKey(),
                 'installments_count' => $plan->installments_count,
-                'surcharge_percent' => $plan->surcharge_percent,
-                'subtotal' => $result['subtotal'],
-                'down_payment' => $result['down_payment'],
-                'financed_amount' => $result['financed_amount'],
                 'total' => $result['total'],
                 'total_cost' => $result['total_cost'],
+                'down_payment' => $result['down_payment'],
+                'financed_amount' => $result['financed_amount'],
                 'first_due_date' => $data['first_due_date'],
                 'status' => $result['installments'] === [] ? SaleStatus::Paid : SaleStatus::Active,
                 'notes' => $data['notes'] ?? null,
             ]);
 
             foreach ($items as $index => $item) {
+                $line = $lines[$index];
+
                 $sale->items()->create([
                     'product_id' => $item['product_id'],
-                    'quantity' => $lines[$index]['quantity'],
-                    'unit_price' => $this->money($item['unit_price']),
-                    'unit_cost' => $this->money($lines[$index]['unit_cost']),
-                    'subtotal' => bcmul((string) $lines[$index]['quantity'], $this->money($item['unit_price']), 2),
+                    'quantity' => $line['quantity'],
+                    'unit_cost' => $line['unit_cost'],
+                    'unit_margin' => $line['unit_margin'],
+                    'unit_price' => $line['unit_price'],
+                    'subtotal' => bcmul((string) $line['quantity'], $line['unit_price'], 2),
+                    'pending_quantity' => $line['quantity'],
                 ]);
             }
 
@@ -119,10 +120,6 @@ class CreateSale
                     'paid_amount' => '0.00',
                     'status' => InstallmentStatus::Pending,
                 ]);
-            }
-
-            foreach ($this->quantitiesByProduct($items) as $productId => $quantity) {
-                $this->stock->record($products[$productId], StockMovementType::Sale, -$quantity, $sale, $user);
             }
 
             $this->accounts->record(
@@ -145,9 +142,9 @@ class CreateSale
                 $sale,
                 [
                     'total' => $sale->total,
+                    'total_cost' => $sale->total_cost,
                     'down_payment' => $sale->down_payment,
                     'installments_count' => $sale->installments_count,
-                    'surcharge_percent' => $sale->surcharge_percent,
                     'seller_id' => $sale->seller_id,
                 ],
                 $user,
@@ -158,61 +155,30 @@ class CreateSale
     }
 
     /**
-     * Bloquea los productos (en orden de id, para evitar deadlocks) y verifica que alcance el stock.
+     * Los productos tienen que existir y estar activos; cantidad, costo y margen no pueden ser negativos.
      *
-     * @param  list<array{product_id: int, quantity: int, unit_price: string|int|float}>  $items
-     * @return array<int, Product>
+     * @param  list<array{product_id: int, quantity: int, unit_cost: string|int|float, unit_margin: string|int|float}>  $items
+     *
+     * @throws ValidationException
      */
-    private function lockAndCheckStock(array $items): array
+    private function ensureItemsAreValid(array $items): void
     {
-        $quantities = $this->quantitiesByProduct($items);
+        $productIds = array_unique(array_map(fn (array $item): int => (int) $item['product_id'], $items));
+        $activeProducts = Product::query()->active()->whereKey($productIds)->count();
 
-        $products = Product::query()
-            ->whereIn('id', array_keys($quantities))
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get()
-            ->keyBy('id')
-            ->all();
-
-        $errors = [];
-
-        foreach ($quantities as $productId => $quantity) {
-            $product = $products[$productId] ?? null;
-
-            if ($product === null) {
-                $errors['items'] = 'Uno de los productos ya no existe.';
-
-                continue;
-            }
-
-            if ($product->stock < $quantity) {
-                $errors['items'] = "Stock insuficiente para «{$product->name}»: hay {$product->stock} y se piden {$quantity}.";
-            }
+        if ($activeProducts !== count($productIds)) {
+            throw ValidationException::withMessages(['items' => 'Uno de los productos no existe o está inactivo.']);
         }
-
-        if ($errors !== []) {
-            throw ValidationException::withMessages($errors);
-        }
-
-        return $products;
-    }
-
-    /**
-     * @param  list<array{product_id: int, quantity: int, unit_price: string|int|float}>  $items
-     * @return array<int, int>
-     */
-    private function quantitiesByProduct(array $items): array
-    {
-        $quantities = [];
 
         foreach ($items as $item) {
-            $quantities[$item['product_id']] = ($quantities[$item['product_id']] ?? 0) + (int) $item['quantity'];
+            if ((int) $item['quantity'] < 1) {
+                throw ValidationException::withMessages(['items' => 'La cantidad de cada producto debe ser al menos 1.']);
+            }
+
+            if ((float) $item['unit_cost'] < 0 || (float) $item['unit_margin'] < 0) {
+                throw ValidationException::withMessages(['items' => 'El costo y el margen no pueden ser negativos.']);
+            }
         }
-
-        ksort($quantities);
-
-        return $quantities;
     }
 
     /**

@@ -6,14 +6,11 @@ use App\Enums\AccountMovementType;
 use App\Enums\ActivityEvent;
 use App\Enums\InstallmentStatus;
 use App\Enums\SaleStatus;
-use App\Enums\StockMovementType;
 use App\Models\Payment;
-use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
 use App\Services\AccountService;
 use App\Services\ActivityLogger;
-use App\Services\StockService;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -21,15 +18,15 @@ use Illuminate\Validation\ValidationException;
 class CancelSale
 {
     public function __construct(
-        private readonly StockService $stock,
         private readonly AccountService $accounts,
         private readonly ActivityLogger $activity,
     ) {}
 
     /**
-     * Anula una venta: devuelve el stock, anula sus cuotas, anula el anticipo (si hubo) y deja
+     * Anula una venta: quita de "pendientes de compra" lo que todavía no se pidió, anula sus cuotas, anula el anticipo (si hubo) y deja
      * en la cuenta corriente los movimientos que revierten la venta. La venta no se borra:
-     * queda como historial con quién, cuándo y por qué.
+     * queda como historial con quién, cuándo y por qué. Lo que ya estaba en una orden de compra
+     * queda en la orden (ya se le pidió al proveedor); si no llega, no vuelve a pendiente.
      *
      * No se puede anular si ya tiene cobros imputados a sus cuotas: hay que anular esos cobros
      * primero, así cada devolución de dinero queda registrada por separado.
@@ -49,7 +46,7 @@ class CancelSale
 
             $this->ensureNoInstallmentPayments($locked, $installments->sum(fn ($installment): float => (float) $installment->paid_amount) > 0);
 
-            $this->returnStock($locked, $user);
+            $locked->items()->update(['pending_quantity' => 0]);
 
             $locked->installments()->update(['status' => InstallmentStatus::Cancelled->value]);
 
@@ -104,20 +101,6 @@ class CancelSale
         throw ValidationException::withMessages([
             'sale' => "La venta tiene cobros imputados a sus cuotas. Anulá primero los cobros {$paymentIds} y después la venta.",
         ]);
-    }
-
-    private function returnStock(Sale $sale, User $user): void
-    {
-        $quantities = $sale->items()->get()
-            ->groupBy('product_id')
-            ->map(fn ($items): int => (int) $items->sum('quantity'))
-            ->sortKeys();
-
-        $products = Product::query()->whereIn('id', $quantities->keys())->orderBy('id')->lockForUpdate()->get()->keyBy('id');
-
-        foreach ($quantities as $productId => $quantity) {
-            $this->stock->record($products[$productId], StockMovementType::Adjustment, $quantity, $sale, $user, "Anulación de la venta #{$sale->getKey()}");
-        }
     }
 
     /**

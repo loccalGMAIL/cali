@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
+use App\Http\Controllers\PrintPurchaseOrderController;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -18,6 +19,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -36,7 +38,7 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn (): View => view('filament.admin.version'))
             ->navigationGroups([
                 NavigationGroup::make('Ventas'),
-                NavigationGroup::make('Stock'),
+                NavigationGroup::make('Compras'),
                 NavigationGroup::make('Configuración'),
             ])
             ->login()
@@ -63,6 +65,10 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->authenticatedRoutes(function (): void {
+                Route::get('purchase-orders/{purchaseOrder}/print', PrintPurchaseOrderController::class)
+                    ->name('purchase-orders.print');
+            });
     }
 }

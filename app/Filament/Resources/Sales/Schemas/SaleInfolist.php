@@ -24,10 +24,13 @@ class SaleInfolist
                         TextEntry::make('date')->label('Fecha')->date('d/m/Y'),
                         TextEntry::make('status')->label('Estado')->badge(),
                         TextEntry::make('financingPlan.name')->label('Plan')
-                            ->formatStateUsing(fn ($state, $record): string => "{$record->installments_count} cuotas, {$record->surcharge_percent}%"),
-                        TextEntry::make('subtotal')->label('Precio de contado')->money('ARS', locale: 'es_AR'),
-                        TextEntry::make('down_payment')->label('Anticipo')->money('ARS', locale: 'es_AR'),
+                            ->formatStateUsing(fn ($state, $record): string => "{$state} ({$record->installments_count} ".($record->installments_count === 1 ? 'cuota' : 'cuotas').')'),
+                        TextEntry::make('total_cost')->label('Costo')->money('ARS', locale: 'es_AR'),
+                        TextEntry::make('margin')->label('Margen')->money('ARS', locale: 'es_AR')
+                            ->state(fn (Sale $record): string => bcsub($record->total, $record->total_cost, 2)),
                         TextEntry::make('total')->label('Total')->money('ARS', locale: 'es_AR')->weight('bold'),
+                        TextEntry::make('down_payment')->label('Anticipo')->money('ARS', locale: 'es_AR'),
+                        TextEntry::make('financed_amount')->label('Financiado')->money('ARS', locale: 'es_AR'),
                         TextEntry::make('notes')->label('Notas')->placeholder('—')->columnSpanFull(),
                     ]),
                 Section::make('Anulación')
@@ -42,12 +45,17 @@ class SaleInfolist
                 Section::make('Productos')
                     ->columnSpanFull()
                     ->schema([
-                        RepeatableEntry::make('items')->label('')->columns(4)
+                        RepeatableEntry::make('items')->label('')->columns(7)
                             ->schema([
                                 TextEntry::make('product.name')->label('Producto'),
                                 TextEntry::make('quantity')->label('Cantidad'),
+                                TextEntry::make('unit_cost')->label('Costo unitario')->money('ARS', locale: 'es_AR'),
+                                TextEntry::make('unit_margin')->label('Margen unitario')->money('ARS', locale: 'es_AR'),
                                 TextEntry::make('unit_price')->label('Precio unitario')->money('ARS', locale: 'es_AR'),
                                 TextEntry::make('subtotal')->label('Subtotal')->money('ARS', locale: 'es_AR'),
+                                TextEntry::make('pending_quantity')->label('Pendiente de compra')
+                                    ->formatStateUsing(fn (int $state): string => $state === 0 ? 'Pedido' : "{$state} sin pedir")
+                                    ->badge()->color(fn (int $state): string => $state === 0 ? 'success' : 'warning'),
                             ]),
                     ]),
                 Section::make('Cuotas')
