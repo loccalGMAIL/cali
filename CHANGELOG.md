@@ -13,6 +13,9 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+### Cambiado
+- Cobros: se quita el texto de ayuda de la lista "Cuotas a imputar".
+
 ## [0.1.0] - 2026-11-09
 
 Primera versión: el panel web de administración completo (etapa 1).
