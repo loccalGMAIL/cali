@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         // Los datos iniciales no son acciones de un usuario: no van al registro de actividad.
         ActivityLogger::withoutLogging(function (): void {
             $this->call(FinancingPlanSeeder::class);
+            $this->call(UserSeeder::class);
 
             User::updateOrCreate(
                 ['email' => config('cali.admin.email')],

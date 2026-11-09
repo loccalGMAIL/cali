@@ -13,7 +13,14 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.1.1] - 2026-11-09
+
 ### Agregado
+- `UserSeeder`: crea (o actualiza) los usuarios administradores Claudio y Carlos Casaretto. Lo ejecuta
+  `DatabaseSeeder`, por lo que quedan en cualquier instalación.
+- El seeder de demostración (`DemoSeeder`) ahora también puede ejecutarse en producción para que el
+  cliente vea el sistema con datos (`php artisan db:seed --class=DemoSeeder --force`). Sigue sin hacer
+  nada si ya hay ventas cargadas.
 - Soporte para correr detrás de un proxy con SSL (Traefik): la aplicación confía en las cabeceras `X-Forwarded-*`
   (`TRUSTED_PROXIES` en el `.env`, por defecto `*`), así los enlaces, las redirecciones y los assets
   salen con `https://`. El `.env.example` documenta los valores de producción para
@@ -97,5 +104,6 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.1.0...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/loccalGMAIL/cali/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/loccalGMAIL/cali/releases/tag/v0.1.0
