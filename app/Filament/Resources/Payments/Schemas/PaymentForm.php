@@ -49,7 +49,6 @@ class PaymentForm
                             ->state(fn (Get $get) => PaymentPreview::debt($get('customer_id')))
                             ->html(),
                         CheckboxList::make('installment_ids')->label('Cuotas a imputar')
-                            ->helperText('Elegí las cuotas que se pagan y el monto se calcula solo. Si no elegís ninguna, el cobro se imputa a la deuda desde la cuota más vieja.')
                             ->options(fn (Get $get): array => PaymentPreview::options($get('customer_id')))
                             ->descriptions(fn (Get $get): array => PaymentPreview::descriptions($get('customer_id')))
                             ->bulkToggleable()
