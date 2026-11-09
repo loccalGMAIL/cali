@@ -10,9 +10,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['supplier_id', 'date', 'invoice_number', 'total', 'notes', 'user_id', 'cancelled_at', 'cancelled_by', 'cancellation_reason'])]
+/**
+ * Factura de compra: registra lo que llegó de una orden de compra y a qué costo.
+ */
+#[Fillable(['purchase_order_id', 'supplier_id', 'date', 'invoice_number', 'total', 'notes', 'user_id', 'cancelled_at', 'cancelled_by', 'cancellation_reason'])]
 class Purchase extends Model
 {
     /** @use HasFactory<PurchaseFactory> */
@@ -56,6 +58,14 @@ class Purchase extends Model
     }
 
     /**
+     * @return BelongsTo<PurchaseOrder, $this>
+     */
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    /**
      * @return BelongsTo<Supplier, $this>
      */
     public function supplier(): BelongsTo
@@ -77,13 +87,5 @@ class Purchase extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseItem::class);
-    }
-
-    /**
-     * @return MorphMany<StockMovement, $this>
-     */
-    public function stockMovements(): MorphMany
-    {
-        return $this->morphMany(StockMovement::class, 'reference');
     }
 }

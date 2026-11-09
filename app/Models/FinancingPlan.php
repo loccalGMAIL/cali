@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['name', 'installments_count', 'surcharge_percent', 'active'])]
+#[Fillable(['name', 'installments_count', 'active'])]
 class FinancingPlan extends Model implements ActivityLoggable
 {
     /** @use HasFactory<FinancingPlanFactory> */
@@ -24,7 +24,6 @@ class FinancingPlan extends Model implements ActivityLoggable
     {
         return [
             'installments_count' => 'integer',
-            'surcharge_percent' => 'decimal:2',
             'active' => 'boolean',
         ];
     }

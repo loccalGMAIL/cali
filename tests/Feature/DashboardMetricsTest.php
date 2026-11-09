@@ -3,7 +3,6 @@
 use App\Actions\CancelPayment;
 use App\Actions\CancelPurchase;
 use App\Actions\CancelSale;
-use App\Actions\CreatePurchase;
 use App\Actions\CreateSale;
 use App\Actions\RegisterPayment;
 use App\Models\Customer;
@@ -16,13 +15,13 @@ use App\Services\DashboardMetrics;
 use Carbon\CarbonImmutable;
 
 /**
- * Venta de 1000 con costo 600, en 3 cuotas con 20% de recargo: 3 cuotas de 400, cada una con
+ * Venta de costo 600 + margen 600 = 1200 en 3 cuotas de 400, cada una con
  * 200 de costo y 200 de ganancia.
  */
 function metricSale(Customer $customer, User $user, string $firstDue, int $down = 0): Sale
 {
-    $plan = FinancingPlan::factory()->create(['installments_count' => 3, 'surcharge_percent' => 20]);
-    $product = Product::factory()->create(['stock' => 10, 'last_cost' => 600]);
+    $plan = FinancingPlan::factory()->create(['installments_count' => 3]);
+    $product = Product::factory()->create(['last_cost' => 600]);
 
     return app(CreateSale::class)->handle([
         'customer_id' => $customer->id,
@@ -31,7 +30,7 @@ function metricSale(Customer $customer, User $user, string $firstDue, int $down 
         'date' => today()->toDateString(),
         'first_due_date' => $firstDue,
         'down_payment' => $down,
-    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_price' => 1000]], $user);
+    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 600]], $user);
 }
 
 beforeEach(function () {
@@ -44,8 +43,8 @@ it('sin datos todo da cero', function () {
     expect($this->metrics->receivable())->toBe(['amount' => '0.00', 'count' => 0])
         ->and($this->metrics->overdue())->toBe(['amount' => '0.00', 'count' => 0])
         ->and($this->metrics->futureProfit())->toBe('0.00')
-        ->and($this->metrics->stockValue())->toBe('0.00')
-        ->and($this->metrics->lowStockCount())->toBe(0)
+        ->and($this->metrics->pendingPurchase())->toBe(['units' => 0, 'cost' => '0.00'])
+        ->and($this->metrics->openPurchaseOrdersCount())->toBe(0)
         ->and(array_sum(array_column($this->metrics->projection(), 'amount')))->toEqual(0);
 });
 
@@ -156,30 +155,31 @@ it('el cobrado del mes anterior se mide aparte', function () {
         ->and($this->metrics->collectedBetween(today()->startOfMonth(), today()->endOfMonth()))->toBe('0.00');
 });
 
-it('valúa el stock a último costo', function () {
-    Product::factory()->create(['stock' => 4, 'last_cost' => 1000]);
-    Product::factory()->create(['stock' => 2, 'last_cost' => 250.50]);
-    Product::factory()->create(['stock' => 0, 'last_cost' => 9999]);
+it('suma lo pendiente de compra en unidades y a costo de venta', function () {
+    $product = Product::factory()->create();
+    $item = soldItem($this->admin, $product, 3, 1000);
+    soldItem($this->admin, $product, 1, '250.50');
 
-    expect($this->metrics->stockValue())->toBe('4501.00');
+    expect($this->metrics->pendingPurchase())->toBe(['units' => 4, 'cost' => '3250.50']);
+
+    issuedOrder($this->admin, Supplier::factory()->create(), [$item]);
+
+    expect($this->metrics->pendingPurchase())->toBe(['units' => 1, 'cost' => '250.50']);
 });
 
-it('cuenta los productos activos con stock bajo', function () {
-    Product::factory()->create(['stock' => 1, 'min_stock' => 3]);
-    Product::factory()->create(['stock' => 1, 'min_stock' => 3, 'active' => false]);
-    Product::factory()->create(['stock' => 5, 'min_stock' => 3]);
+it('cuenta las órdenes de compra abiertas', function () {
+    $product = Product::factory()->create();
+    $supplier = Supplier::factory()->create();
+    issuedOrder($this->admin, $supplier, [soldItem($this->admin, $product)]);
+    receivedPurchase($this->admin, $supplier, $product, 1, 100, 'A-1');
 
-    expect($this->metrics->lowStockCount())->toBe(1);
+    expect($this->metrics->openPurchaseOrdersCount())->toBe(1);
 });
 
 it('las compras del mes excluyen las anuladas', function () {
     $supplier = Supplier::factory()->create();
-    $product = Product::factory()->create(['stock' => 0]);
-    $buy = fn (string $invoice) => app(CreatePurchase::class)->handle([
-        'supplier_id' => $supplier->id,
-        'date' => today()->toDateString(),
-        'invoice_number' => $invoice,
-    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_cost' => 1000]], $this->admin);
+    $product = Product::factory()->create();
+    $buy = fn (string $invoice) => receivedPurchase($this->admin, $supplier, $product, 1, 1000, $invoice);
 
     $buy('A-1');
     $second = $buy('A-2');

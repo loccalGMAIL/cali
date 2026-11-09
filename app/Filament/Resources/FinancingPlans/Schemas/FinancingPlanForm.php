@@ -14,15 +14,13 @@ class FinancingPlanForm
         return $schema
             ->components([
                 Section::make('Plan de financiación')
-                    ->description('Un plan de 1 cuota con 0% funciona como venta de contado.')
+                    ->description('La cuota es (costo + margen − anticipo) ÷ cantidad de cuotas. Un plan de 1 cuota funciona como venta de contado.')
                     ->columns(2)
                     ->columnSpanFull()
                     ->schema([
                         TextInput::make('name')->label('Nombre')->required()->maxLength(255),
                         TextInput::make('installments_count')->label('Cantidad de cuotas')
                             ->required()->integer()->minValue(1)->default(1),
-                        TextInput::make('surcharge_percent')->label('Recargo')
-                            ->required()->numeric()->minValue(0)->default(0)->suffix('%'),
                         Toggle::make('active')->label('Activo')->default(true),
                     ]),
             ]);

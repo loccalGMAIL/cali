@@ -10,8 +10,8 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * Crea la fila de la venta tal cual, sin cuotas ni stock. Para una venta completa
- * (con cuotas, stock y cuenta corriente) usar la acción CreateSale.
+ * Crea la fila de la venta tal cual, sin ítems ni cuotas. Para una venta completa
+ * (con ítems, cuotas y cuenta corriente) usar la acción CreateSale.
  *
  * @extends Factory<Sale>
  */
@@ -28,12 +28,10 @@ class SaleFactory extends Factory
             'date' => today()->toDateString(),
             'financing_plan_id' => FinancingPlan::factory(),
             'installments_count' => 3,
-            'surcharge_percent' => 15,
-            'subtotal' => 1000,
-            'down_payment' => 0,
-            'financed_amount' => 1150,
-            'total' => 1150,
+            'total' => 1000,
             'total_cost' => 600,
+            'down_payment' => 0,
+            'financed_amount' => 1000,
             'first_due_date' => today()->addMonth()->toDateString(),
             'status' => SaleStatus::Active,
             'notes' => null,

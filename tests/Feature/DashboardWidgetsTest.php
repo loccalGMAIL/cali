@@ -1,19 +1,19 @@
 <?php
 
 use App\Actions\CancelPurchase;
-use App\Actions\CreatePurchase;
+use App\Actions\CancelSale;
 use App\Actions\CreateSale;
 use App\Actions\RegisterPayment;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Payments\PaymentResource;
-use App\Filament\Resources\Purchases\PurchaseResource;
+use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use App\Filament\Widgets\CollectionsOverview;
 use App\Filament\Widgets\LatestPurchases;
-use App\Filament\Widgets\LowStockProducts;
 use App\Filament\Widgets\OverdueInstallments;
+use App\Filament\Widgets\PendingPurchaseItems;
 use App\Filament\Widgets\ProjectedIncomeChart;
-use App\Filament\Widgets\StockAndPurchasesOverview;
+use App\Filament\Widgets\PurchasesOverview;
 use App\Models\Customer;
 use App\Models\FinancingPlan;
 use App\Models\Installment;
@@ -28,8 +28,8 @@ use Livewire\Livewire;
 
 function dashboardSale(Customer $customer, User $user, string $firstDue): void
 {
-    $plan = FinancingPlan::factory()->create(['installments_count' => 3, 'surcharge_percent' => 20]);
-    $product = Product::factory()->create(['stock' => 10, 'last_cost' => 600]);
+    $plan = FinancingPlan::factory()->create(['installments_count' => 3]);
+    $product = Product::factory()->create(['last_cost' => 600]);
 
     app(CreateSale::class)->handle([
         'customer_id' => $customer->id,
@@ -38,7 +38,7 @@ function dashboardSale(Customer $customer, User $user, string $firstDue): void
         'date' => today()->toDateString(),
         'first_due_date' => $firstDue,
         'down_payment' => 0,
-    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_price' => 1000]], $user);
+    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 600]], $user);
 }
 
 beforeEach(function () {
@@ -52,7 +52,7 @@ it('el dashboard se muestra al admin con todos los widgets', function () {
 
     Livewire::test(Dashboard::class)->assertSuccessful();
 
-    foreach ([CollectionsOverview::class, ProjectedIncomeChart::class, OverdueInstallments::class, StockAndPurchasesOverview::class, LowStockProducts::class, LatestPurchases::class] as $widget) {
+    foreach ([CollectionsOverview::class, ProjectedIncomeChart::class, OverdueInstallments::class, PurchasesOverview::class, PendingPurchaseItems::class, LatestPurchases::class] as $widget) {
         expect($widget::canView())->toBeTrue();
     }
 });
@@ -60,7 +60,7 @@ it('el dashboard se muestra al admin con todos los widgets', function () {
 it('un vendedor no ve los widgets financieros', function () {
     $this->actingAs(User::factory()->seller()->create());
 
-    foreach ([CollectionsOverview::class, ProjectedIncomeChart::class, OverdueInstallments::class, StockAndPurchasesOverview::class, LowStockProducts::class, LatestPurchases::class] as $widget) {
+    foreach ([CollectionsOverview::class, ProjectedIncomeChart::class, OverdueInstallments::class, PurchasesOverview::class, PendingPurchaseItems::class, LatestPurchases::class] as $widget) {
         expect($widget::canView())->toBeFalse();
     }
 });
@@ -138,43 +138,42 @@ it('una cuota cobrada sale de la tabla de vencidas', function () {
     Livewire::test(OverdueInstallments::class)->assertCountTableRecords(0);
 });
 
-it('las estadísticas de stock y compras muestran valor, compras del mes y stock bajo', function () {
+it('las estadísticas de compras muestran lo pendiente, las órdenes abiertas y las compras del mes', function () {
     $this->actingAs($this->admin);
-    Product::factory()->create(['stock' => 1, 'min_stock' => 5, 'last_cost' => 1000]);
+    $product = Product::factory()->create();
     $supplier = Supplier::factory()->create();
-    app(CreatePurchase::class)->handle([
-        'supplier_id' => $supplier->id,
-        'date' => today()->toDateString(),
-        'invoice_number' => 'A-1',
-    ], [['product_id' => Product::factory()->create(['stock' => 0])->id, 'quantity' => 2, 'unit_cost' => 500]], $this->admin);
+    soldItem($this->admin, $product, 2, 1500);
+    issuedOrder($this->admin, $supplier, [soldItem($this->admin, $product)]);
+    receivedPurchase($this->admin, $supplier, $product, 2, 500, 'A-1');
 
-    Livewire::test(StockAndPurchasesOverview::class)
-        ->assertSee('Valor del stock')->assertSee('2.000')   // 1 × 1000 + 2 × 500
-        ->assertSee('Compras del mes')->assertSee('1.000')
-        ->assertSee('Productos con stock bajo');
+    Livewire::test(PurchasesOverview::class)
+        ->assertSee('Pendiente de compra')->assertSee('3.000')->assertSee('2 unidades sin pedir')
+        ->assertSee('Órdenes sin recibir')
+        ->assertSee('Compras del mes')->assertSee('1.000');
 });
 
-it('la tabla de stock bajo lista solo los productos activos por debajo del mínimo', function () {
+it('la tabla de pendientes de compra lista lo vendido sin pedir y no lo de ventas anuladas', function () {
     $this->actingAs($this->admin);
-    $low = Product::factory()->create(['stock' => 1, 'min_stock' => 3]);
-    $ok = Product::factory()->create(['stock' => 5, 'min_stock' => 3]);
-    $inactive = Product::factory()->create(['stock' => 0, 'min_stock' => 3, 'active' => false]);
+    $product = Product::factory()->create();
+    $pending = soldItem($this->admin, $product);
+    $ordered = soldItem($this->admin, $product);
+    $cancelled = soldItem($this->admin, $product);
+    issuedOrder($this->admin, Supplier::factory()->create(), [$ordered]);
+    app(CancelSale::class)->handle($cancelled->sale, 'Error', $this->admin);
 
-    Livewire::test(LowStockProducts::class)
-        ->assertCanSeeTableRecords([$low])
-        ->assertCanNotSeeTableRecords([$ok, $inactive]);
+    Livewire::test(PendingPurchaseItems::class)
+        ->assertCanSeeTableRecords([$pending])
+        ->assertCanNotSeeTableRecords([$ordered, $cancelled]);
 });
 
 it('las últimas compras muestran las 10 más recientes y sin anuladas', function () {
     $this->actingAs($this->admin);
     $supplier = Supplier::factory()->create();
-    $product = Product::factory()->create(['stock' => 0]);
+    $product = Product::factory()->create();
 
-    $purchases = collect(range(1, 12))->map(fn (int $i): Purchase => app(CreatePurchase::class)->handle([
-        'supplier_id' => $supplier->id,
-        'date' => today()->subDays(20 - $i)->toDateString(),
-        'invoice_number' => "A-{$i}",
-    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_cost' => 100]], $this->admin));
+    $purchases = collect(range(1, 12))->map(fn (int $i): Purchase => receivedPurchase(
+        $this->admin, $supplier, $product, 1, 100, "A-{$i}", today()->subDays(20 - $i)->toDateString(),
+    ));
 
     app(CancelPurchase::class)->handle($purchases[11], 'Error', $this->admin); // la más reciente, anulada
 
@@ -184,7 +183,7 @@ it('las últimas compras muestran las 10 más recientes y sin anuladas', functio
         ->assertCanNotSeeTableRecords([$purchases[0], $purchases[11]]);
 });
 
-it('el dashboard tiene accesos directos a cobrar, nuevo cliente y nueva compra', function () {
+it('el dashboard tiene accesos directos a cobrar, nuevo cliente y nueva orden de compra', function () {
     $this->actingAs($this->admin);
 
     Livewire::test(Dashboard::class)
@@ -192,8 +191,8 @@ it('el dashboard tiene accesos directos a cobrar, nuevo cliente y nueva compra',
         ->assertActionHasUrl('collect', PaymentResource::getUrl('create'))
         ->assertActionVisible('newCustomer')
         ->assertActionHasUrl('newCustomer', CustomerResource::getUrl('create'))
-        ->assertActionVisible('newPurchase')
-        ->assertActionHasUrl('newPurchase', PurchaseResource::getUrl('create'));
+        ->assertActionVisible('newPurchaseOrder')
+        ->assertActionHasUrl('newPurchaseOrder', PurchaseOrderResource::getUrl('create'));
 });
 
 it('los accesos directos respetan los permisos: un vendedor solo ve el de cliente', function () {
@@ -202,14 +201,14 @@ it('los accesos directos respetan los permisos: un vendedor solo ve el de client
     Livewire::test(Dashboard::class)
         ->assertActionHidden('collect')
         ->assertActionVisible('newCustomer')
-        ->assertActionHidden('newPurchase');
+        ->assertActionHidden('newPurchaseOrder');
 });
 
-it('los accesos directos del dashboard se llaman Cobrar, Nuevo Cliente y Nueva Compra', function () {
+it('los accesos directos del dashboard se llaman Cobrar, Nuevo Cliente y Nueva Orden de Compra', function () {
     $this->actingAs($this->admin);
 
     Livewire::test(Dashboard::class)
         ->assertSee('Cobrar')
         ->assertSee('Nuevo Cliente')
-        ->assertSee('Nueva Compra');
+        ->assertSee('Nueva Orden de Compra');
 });

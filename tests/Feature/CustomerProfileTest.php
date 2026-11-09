@@ -22,8 +22,8 @@ beforeEach(function () {
     Filament::setCurrentPanel('admin');
     $this->admin = User::factory()->admin()->create();
     $this->customer = Customer::factory()->create();
-    $this->plan = FinancingPlan::factory()->create(['installments_count' => 3, 'surcharge_percent' => 20]);
-    $this->product = Product::factory()->create(['stock' => 50, 'last_cost' => 600]);
+    $this->plan = FinancingPlan::factory()->create(['installments_count' => 3]);
+    $this->product = Product::factory()->create(['last_cost' => 600]);
 
     $this->sell = fn (Customer $customer, string $firstDue = '2026-12-01', int $down = 0): Sale => app(CreateSale::class)->handle([
         'customer_id' => $customer->id,
@@ -32,7 +32,7 @@ beforeEach(function () {
         'date' => '2026-11-01',
         'first_due_date' => $firstDue,
         'down_payment' => $down,
-    ], [['product_id' => $this->product->id, 'quantity' => 1, 'unit_price' => 1000]], $this->admin);
+    ], [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 600]], $this->admin);
 });
 
 it('calcula la deuda, la deuda vencida y el próximo vencimiento del cliente', function () {
@@ -99,7 +99,7 @@ it('la ficha se muestra con la situación de la cuenta', function () {
     Livewire::test(ViewCustomer::class, ['record' => $this->customer->getKey()])
         ->assertSuccessful()
         ->assertSee('Saldo de cuenta corriente')
-        ->assertSee('960,00');   // 1160 de venta - 200 de anticipo = 960 de deuda
+        ->assertSee('1.000,00');   // 1200 de venta - 200 de anticipo = 1000 de deuda
 });
 
 it('la pestaña de cuotas lista las cuotas del cliente y marca las vencidas', function () {
@@ -131,8 +131,8 @@ it('la pestaña de cuenta corriente muestra los movimientos con su saldo', funct
         'pageClass' => ViewCustomer::class,
     ])->assertCanSeeTableRecords($movements)->assertCountTableRecords(3);
 
-    expect($movements->pluck('balance')->all())->toBe(['1160.00', '960.00', '660.00'])
-        ->and(app(AccountService::class)->balance($this->customer))->toBe($this->customer->debt())->toBe('660.00');
+    expect($movements->pluck('balance')->all())->toBe(['1200.00', '1000.00', '700.00'])
+        ->and(app(AccountService::class)->balance($this->customer))->toBe($this->customer->debt())->toBe('700.00');
 });
 
 it('ofrece cobrar solo si hay deuda y apunta al formulario con el cliente elegido', function () {

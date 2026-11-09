@@ -17,12 +17,12 @@ use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Crea una venta real de 1000 contado, 3 cuotas con 20% de recargo: 3 cuotas de 400.
+ * Crea una venta real de costo 600 + margen 600 = 1200 en 3 cuotas de 400.
  */
 function makeSale(Customer $customer, User $user, string $firstDue = '2026-12-01'): Sale
 {
-    $plan = FinancingPlan::factory()->create(['installments_count' => 3, 'surcharge_percent' => 20]);
-    $product = Product::factory()->create(['stock' => 10, 'last_cost' => 600]);
+    $plan = FinancingPlan::factory()->create(['installments_count' => 3]);
+    $product = Product::factory()->create(['last_cost' => 600]);
 
     return app(CreateSale::class)->handle([
         'customer_id' => $customer->id,
@@ -31,7 +31,7 @@ function makeSale(Customer $customer, User $user, string $firstDue = '2026-12-01
         'date' => '2026-11-01',
         'first_due_date' => $firstDue,
         'down_payment' => 0,
-    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_price' => 1000]], $user);
+    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 600]], $user);
 }
 
 beforeEach(function () {

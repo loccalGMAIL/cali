@@ -18,12 +18,10 @@ return new class extends Migration
             $table->string('brand')->nullable();
             $table->text('description')->nullable();
             $table->boolean('active')->default(true);
-            $table->integer('stock')->default(0);
-            $table->unsignedInteger('min_stock')->default(0);
+            // Proveedor habitual: sirve para armar la orden de compra de cada proveedor.
+            $table->foreignId('supplier_id')->nullable()->constrained()->nullOnDelete();
+            // Costo de la última factura de compra: se sugiere al cargar una venta.
             $table->decimal('last_cost', 12, 2)->default(0);
-            $table->decimal('margin_percent', 8, 2)->default(0);
-            $table->string('price_mode')->default('auto');
-            $table->decimal('sale_price', 12, 2)->default(0);
             $table->timestamps();
         });
     }

@@ -20,7 +20,6 @@ class FinancingPlanFactory extends Factory
         return [
             'name' => $installments.' cuotas',
             'installments_count' => $installments,
-            'surcharge_percent' => $installments * 5,
             'active' => true,
         ];
     }
@@ -30,7 +29,6 @@ class FinancingPlanFactory extends Factory
         return $this->state(fn () => [
             'name' => 'Contado',
             'installments_count' => 1,
-            'surcharge_percent' => 0,
         ]);
     }
 }

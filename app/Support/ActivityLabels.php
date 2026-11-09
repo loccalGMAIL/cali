@@ -7,6 +7,7 @@ use App\Models\FinancingPlan;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\PurchaseOrder;
 use App\Models\Sale;
 use App\Models\Supplier;
 use App\Models\User;
@@ -26,6 +27,7 @@ class ActivityLabels
         FinancingPlan::class => 'Plan de financiación',
         User::class => 'Usuario',
         Sale::class => 'Venta',
+        PurchaseOrder::class => 'Orden de compra',
         Purchase::class => 'Compra',
         Payment::class => 'Cobro',
     ];
@@ -48,13 +50,10 @@ class ActivityLabels
         'sku' => 'Código',
         'brand' => 'Marca',
         'description' => 'Descripción',
-        'min_stock' => 'Stock mínimo',
+        'supplier_id' => 'Proveedor habitual (ID)',
         'last_cost' => 'Último costo',
-        'margin_percent' => 'Margen (%)',
-        'price_mode' => 'Modo de precio',
-        'sale_price' => 'Precio de venta',
         'installments_count' => 'Cantidad de cuotas',
-        'surcharge_percent' => 'Recargo (%)',
+        'total_cost' => 'Costo total',
         'google_id' => 'ID de Google',
         'reason' => 'Motivo',
         'total' => 'Total',

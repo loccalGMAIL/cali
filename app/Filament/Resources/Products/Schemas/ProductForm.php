@@ -2,14 +2,12 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
-use App\Enums\PriceMode;
+use App\Models\Supplier;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class ProductForm
@@ -30,41 +28,17 @@ class ProductForm
                             ->columnSpan(['default' => 12, 'md' => 4]),
                         Toggle::make('active')->label('Activo')->default(true)->inline(false)
                             ->columnSpan(['default' => 12, 'md' => 2]),
+                        Select::make('supplier_id')->label('Proveedor habitual')
+                            ->options(fn (): array => Supplier::query()->where('active', true)->orderBy('name')->pluck('name', 'id')->all())
+                            ->searchable()
+                            ->helperText('Sirve para armar la orden de compra de cada proveedor.')
+                            ->columnSpan(['default' => 12, 'md' => 6]),
+                        TextInput::make('last_cost')->label('Último costo')->prefix('$')
+                            ->disabled()->dehydrated(false)
+                            ->helperText('Sale de la última factura de compra y se sugiere al vender.')
+                            ->columnSpan(['default' => 12, 'md' => 6]),
                         Textarea::make('description')->label('Descripción')->columnSpanFull(),
                     ]),
-                Grid::make(['default' => 1, 'md' => 2])
-                    ->columnSpanFull()
-                    ->schema([
-                        Section::make('Stock')
-                            ->columns(2)
-                            ->schema([
-                                TextInput::make('stock')->label('Stock actual')->integer()->default(0)
-                                    ->disabled()->dehydrated(false),
-                                TextInput::make('min_stock')->label('Stock mínimo')->integer()->minValue(0)->default(0)
-                                    ->dehydrateStateUsing(fn ($state): int => (int) $state),
-                            ]),
-                        Section::make('Precio')
-                            ->columns(2)
-                            ->schema([
-                                TextInput::make('last_cost')->label('Último costo')->required()->numeric()->minValue(0)
-                                    ->default(0)->prefix('$'),
-                                TextInput::make('margin_percent')->label('Margen')->required()->numeric()->minValue(0)
-                                    ->default(0)->suffix('%'),
-                                Select::make('price_mode')->label('Modo de precio')->options(PriceMode::class)
-                                    ->default(PriceMode::Auto)->required()->live(),
-                                TextInput::make('sale_price')->label('Precio de venta')->numeric()->minValue(0)
-                                    ->default(0)->prefix('$')
-                                    ->required(fn (Get $get): bool => self::isManual($get('price_mode')))
-                                    ->disabled(fn (Get $get): bool => ! self::isManual($get('price_mode')))
-                                    ->dehydrated(fn (Get $get): bool => self::isManual($get('price_mode')))
-                                    ->helperText('En modo automático se calcula al guardar.'),
-                            ]),
-                    ]),
             ]);
-    }
-
-    private static function isManual(PriceMode|string|null $mode): bool
-    {
-        return ($mode instanceof PriceMode ? $mode : PriceMode::tryFrom((string) $mode)) === PriceMode::Manual;
     }
 }

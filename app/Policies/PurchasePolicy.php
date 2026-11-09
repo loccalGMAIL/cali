@@ -7,7 +7,7 @@ use App\Models\User;
 
 /**
  * Las compras solo las gestiona el admin y, una vez cargadas, no se editan ni se borran
- * (el stock y el costo ya fueron impactados): si hubo un error se anulan (queda en el historial).
+ * (la orden y el costo ya fueron impactados): si hubo un error se anulan (queda en el historial).
  */
 class PurchasePolicy
 {

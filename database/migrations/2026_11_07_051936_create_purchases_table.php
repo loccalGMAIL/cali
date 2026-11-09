@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('purchases', function (Blueprint $table) {
             $table->id();
+            // La factura siempre corresponde a una orden de compra emitida al proveedor.
+            $table->foreignId('purchase_order_id')->constrained();
             $table->foreignId('supplier_id')->constrained();
             $table->date('date');
             $table->string('invoice_number');

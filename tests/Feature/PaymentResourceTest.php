@@ -24,8 +24,8 @@ beforeEach(function () {
     $this->admin = User::factory()->admin()->create();
     $this->customer = Customer::factory()->create();
 
-    $plan = FinancingPlan::factory()->create(['installments_count' => 3, 'surcharge_percent' => 20]);
-    $product = Product::factory()->create(['stock' => 10, 'last_cost' => 600]);
+    $plan = FinancingPlan::factory()->create(['installments_count' => 3]);
+    $product = Product::factory()->create(['last_cost' => 600]);
 
     $this->sale = app(CreateSale::class)->handle([
         'customer_id' => $this->customer->id,
@@ -34,7 +34,7 @@ beforeEach(function () {
         'date' => '2026-11-01',
         'first_due_date' => '2026-12-01',
         'down_payment' => 0,
-    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_price' => 1000]], $this->admin);
+    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 600]], $this->admin);
 });
 
 it('registra un cobro desde el panel y lo imputa a las cuotas', function () {

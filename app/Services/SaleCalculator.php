@@ -10,17 +10,18 @@ use InvalidArgumentException;
  * Reglas de cálculo de una venta en cuotas. Es una clase pura (sin base de datos):
  * las ventas reales y la vista previa del formulario usan exactamente el mismo cálculo.
  *
+ * Cada ítem vale costo + margen (los dos se cargan al vender). La cuota es
+ * (total − anticipo) ÷ cantidad de cuotas: no hay recargo por plan.
+ *
  * Todos los montos viajan como strings decimales con 2 decimales y se operan con bcmath
  * para evitar errores de punto flotante.
  *
  * @phpstan-type Line array{quantity: int, unit_price: string|int|float, unit_cost: string|int|float}
  * @phpstan-type Installment array{number: int, due_date: CarbonImmutable, amount: string, cost_portion: string}
  * @phpstan-type Result array{
- *     subtotal: string,
- *     total_cost: string,
- *     balance_to_finance: string,
- *     financed_amount: string,
  *     total: string,
+ *     total_cost: string,
+ *     financed_amount: string,
  *     down_payment: string,
  *     down_payment_cost: string,
  *     installment_amount: string,
@@ -38,7 +39,6 @@ class SaleCalculator
     public function calculate(
         array $lines,
         string|int|float $downPayment,
-        string|int|float $surchargePercent,
         int $installmentsCount,
         CarbonInterface|string $firstDueDate,
     ): array {
@@ -46,12 +46,12 @@ class SaleCalculator
             throw new InvalidArgumentException('La cantidad de cuotas debe ser al menos 1.');
         }
 
-        $subtotal = '0.00';
+        $total = '0.00';
         $totalCost = '0.00';
 
         foreach ($lines as $line) {
             $quantity = (string) max(0, (int) $line['quantity']);
-            $subtotal = bcadd($subtotal, bcmul($quantity, $this->money($line['unit_price']), 2), 2);
+            $total = bcadd($total, bcmul($quantity, $this->money($line['unit_price']), 2), 2);
             $totalCost = bcadd($totalCost, bcmul($quantity, $this->money($line['unit_cost']), 2), 2);
         }
 
@@ -61,27 +61,32 @@ class SaleCalculator
             throw new InvalidArgumentException('El anticipo no puede ser negativo.');
         }
 
-        if (bccomp($downPayment, $subtotal, 2) > 0) {
-            throw new InvalidArgumentException('El anticipo no puede superar el precio de contado.');
+        if (bccomp($downPayment, $total, 2) > 0) {
+            throw new InvalidArgumentException('El anticipo no puede superar el total de la venta.');
         }
 
-        $balance = bcsub($subtotal, $downPayment, 2);
-        $financed = $this->round(bcmul($balance, bcadd('1', bcdiv($this->money($surchargePercent), '100', 6), 6), 6));
-        $total = bcadd($downPayment, $financed, 2);
+        // Sin recargos: lo que queda después del anticipo se divide en cuotas iguales.
+        $financed = bcsub($total, $downPayment, 2);
 
         $installments = $this->buildInstallments($financed, $installmentsCount, $firstDueDate, $total, $totalCost, $downPayment);
 
         return [
-            'subtotal' => $subtotal,
-            'total_cost' => $totalCost,
-            'balance_to_finance' => $balance,
-            'financed_amount' => $financed,
             'total' => $total,
+            'total_cost' => $totalCost,
+            'financed_amount' => $financed,
             'down_payment' => $downPayment,
             'down_payment_cost' => $this->costShare($totalCost, $downPayment, $total),
             'installment_amount' => $installments[0]['amount'] ?? '0.00',
             'installments' => $installments,
         ];
+    }
+
+    /**
+     * Precio unitario de un ítem: costo + margen.
+     */
+    public function unitPrice(string|int|float $unitCost, string|int|float $unitMargin): string
+    {
+        return bcadd($this->money($unitCost), $this->money($unitMargin), 2);
     }
 
     /**

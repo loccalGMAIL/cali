@@ -16,7 +16,7 @@ class CancelPurchaseAction extends CancelRecordAction
 
     protected function modalExplanation(): string
     {
-        return 'Se descuenta del stock lo que había sumado y, si fijó el último costo de un producto, se vuelve al de la compra anterior. No se puede anular si parte de la mercadería ya se vendió.';
+        return 'La orden de compra vuelve a quedar emitida para cargar la factura correcta, lo que había vuelto a pendiente por faltante se descuenta y, si la factura fijó el último costo de un producto, se vuelve al de la compra anterior.';
     }
 
     protected function canCancel(Model $record): bool

@@ -19,12 +19,11 @@ return new class extends Migration
             $table->foreignId('financing_plan_id')->constrained();
             // Snapshot del plan: un cambio posterior en los planes no afecta ventas existentes.
             $table->unsignedSmallInteger('installments_count');
-            $table->decimal('surcharge_percent', 8, 2);
-            $table->decimal('subtotal', 12, 2);
-            $table->decimal('down_payment', 12, 2)->default(0);
-            $table->decimal('financed_amount', 12, 2);
+            // Total = costo + margen de los ítems. Lo financiado (total - anticipo) se divide en cuotas iguales.
             $table->decimal('total', 12, 2);
             $table->decimal('total_cost', 12, 2);
+            $table->decimal('down_payment', 12, 2)->default(0);
+            $table->decimal('financed_amount', 12, 2);
             $table->date('first_due_date');
             $table->string('status')->default('active');
             $table->text('notes')->nullable();

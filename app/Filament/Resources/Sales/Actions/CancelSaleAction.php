@@ -16,7 +16,7 @@ class CancelSaleAction extends CancelRecordAction
 
     protected function modalExplanation(): string
     {
-        return 'Se devuelve el stock, se anulan las cuotas y el anticipo, y se revierte la venta en la cuenta corriente. Si la venta tiene cobros imputados a sus cuotas, hay que anularlos primero.';
+        return 'Se quita de pendientes de compra lo que todavía no se pidió (lo que ya está en una orden de compra queda en la orden), se anulan las cuotas y el anticipo, y se revierte la venta en la cuenta corriente. Si la venta tiene cobros imputados a sus cuotas, hay que anularlos primero.';
     }
 
     protected function canCancel(Model $record): bool

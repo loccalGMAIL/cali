@@ -4,7 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Payments\PaymentResource;
-use App\Filament\Resources\Purchases\PurchaseResource;
+use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use Filament\Actions\Action;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Support\Icons\Heroicon;
@@ -33,12 +33,12 @@ class Dashboard extends BaseDashboard
                 ->color('gray')
                 ->url(fn (): string => CustomerResource::getUrl('create'))
                 ->visible(fn (): bool => CustomerResource::canCreate()),
-            Action::make('newPurchase')
-                ->label('Nueva Compra')
-                ->icon(Heroicon::OutlinedShoppingCart)
+            Action::make('newPurchaseOrder')
+                ->label('Nueva Orden de Compra')
+                ->icon(Heroicon::OutlinedClipboardDocumentList)
                 ->color('gray')
-                ->url(fn (): string => PurchaseResource::getUrl('create'))
-                ->visible(fn (): bool => PurchaseResource::canCreate()),
+                ->url(fn (): string => PurchaseOrderResource::getUrl('create'))
+                ->visible(fn (): bool => PurchaseOrderResource::canCreate()),
         ];
     }
 }

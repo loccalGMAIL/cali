@@ -17,8 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 function saleFor(Customer $customer, User $user, int $down = 0): Sale
 {
-    $plan = FinancingPlan::factory()->create(['installments_count' => 3, 'surcharge_percent' => 20]);
-    $product = Product::factory()->create(['stock' => 10, 'last_cost' => 600]);
+    $plan = FinancingPlan::factory()->create(['installments_count' => 3]);
+    $product = Product::factory()->create(['last_cost' => 600]);
 
     return app(CreateSale::class)->handle([
         'customer_id' => $customer->id,
@@ -27,7 +27,7 @@ function saleFor(Customer $customer, User $user, int $down = 0): Sale
         'date' => '2026-11-01',
         'first_due_date' => '2026-12-01',
         'down_payment' => $down,
-    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_price' => 1000]], $user);
+    ], [['product_id' => $product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 600]], $user);
 }
 
 function collect_(Customer $customer, User $user, float $amount): Payment

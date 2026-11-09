@@ -23,7 +23,7 @@ class SalesTable
                 TextColumn::make('customer.name')->label('Cliente')->searchable(),
                 TextColumn::make('seller.name')->label('Vendedor')->toggleable(),
                 TextColumn::make('installments_count')->label('Plan')
-                    ->formatStateUsing(fn (Sale $record): string => "{$record->installments_count} cuotas, {$record->surcharge_percent}%"),
+                    ->formatStateUsing(fn (Sale $record): string => $record->installments_count === 1 ? '1 cuota' : "{$record->installments_count} cuotas"),
                 TextColumn::make('total')->label('Total')->money('ARS', locale: 'es_AR')->sortable(),
                 TextColumn::make('status')->label('Estado')->badge(),
             ])

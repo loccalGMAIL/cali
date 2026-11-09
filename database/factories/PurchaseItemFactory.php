@@ -23,6 +23,7 @@ class PurchaseItemFactory extends Factory
         return [
             'purchase_id' => Purchase::factory(),
             'product_id' => Product::factory(),
+            'ordered_quantity' => $quantity,
             'quantity' => $quantity,
             'unit_cost' => $unitCost,
             'subtotal' => $quantity * $unitCost,

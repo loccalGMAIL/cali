@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Purchase;
+use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,6 +19,7 @@ class PurchaseFactory extends Factory
     public function definition(): array
     {
         return [
+            'purchase_order_id' => PurchaseOrder::factory(),
             'supplier_id' => Supplier::factory(),
             'date' => fake()->dateTimeBetween('-3 months')->format('Y-m-d'),
             'invoice_number' => fake()->unique()->numerify('####-########'),

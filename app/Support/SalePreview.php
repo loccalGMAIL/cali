@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\FinancingPlan;
-use App\Models\Product;
 use App\Services\SaleCalculator;
 use Illuminate\Support\HtmlString;
 use InvalidArgumentException;
@@ -15,7 +14,7 @@ use InvalidArgumentException;
 class SalePreview
 {
     /**
-     * @param  array<array-key, array{product_id?: mixed, quantity?: mixed, unit_price?: mixed}>  $items
+     * @param  array<array-key, array{product_id?: mixed, quantity?: mixed, unit_cost?: mixed, unit_margin?: mixed}>  $items
      */
     public static function render(array $items, mixed $planId, mixed $firstDueDate, mixed $downPayment): HtmlString
     {
@@ -26,23 +25,23 @@ class SalePreview
         }
 
         $plan = FinancingPlan::find($planId);
-        $costs = Product::query()->whereIn('id', array_column($items, 'product_id'))->pluck('last_cost', 'id');
 
         if ($plan === null) {
             return new HtmlString('');
         }
 
+        $calculator = new SaleCalculator;
+
         $lines = array_map(fn (array $item): array => [
             'quantity' => (int) ($item['quantity'] ?? 0),
-            'unit_price' => self::number($item['unit_price'] ?? 0),
-            'unit_cost' => $costs[$item['product_id']] ?? 0,
+            'unit_cost' => self::number($item['unit_cost'] ?? 0),
+            'unit_price' => $calculator->unitPrice(self::number($item['unit_cost'] ?? 0), self::number($item['unit_margin'] ?? 0)),
         ], $items);
 
         try {
-            $result = (new SaleCalculator)->calculate(
+            $result = $calculator->calculate(
                 $lines,
                 self::number($downPayment),
-                $plan->surcharge_percent,
                 $plan->installments_count,
                 filled($firstDueDate) ? $firstDueDate : today()->addMonth(),
             );
@@ -75,11 +74,10 @@ class SalePreview
                 .'</tr></thead><tbody>'.$rows.'</tbody></table>';
 
         $summary = [
-            'Precio de contado' => Money::format($result['subtotal']),
+            'Costo' => Money::format($result['total_cost']),
+            'Margen' => Money::format(bcsub($result['total'], $result['total_cost'], 2)),
+            'Total de la venta (costo + margen)' => Money::format($result['total']),
             'Anticipo' => Money::format($result['down_payment']),
-            'Saldo a financiar' => Money::format($result['balance_to_finance']),
-            'Recargo ('.$plan->name.', '.rtrim(rtrim(number_format((float) $plan->surcharge_percent, 2, ',', '.'), '0'), ',').'%)' => Money::format(bcsub($result['financed_amount'], $result['balance_to_finance'], 2)),
-            'Total financiado' => Money::format($result['financed_amount']),
         ];
 
         $lines = '';
@@ -93,7 +91,7 @@ class SalePreview
             : '<div style="margin-top:8px; font-weight:600">'.count($result['installments']).' cuotas de '.Money::format($result['installment_amount']).'</div>';
 
         return '<div class="text-sm" style="max-width:420px">'.$lines
-            .'<div style="display:flex; justify-content:space-between; gap:24px; margin-top:6px; font-weight:700; font-size:1.05rem"><span>Total de la venta</span><span>'.Money::format($result['total']).'</span></div>'
+            .'<div style="display:flex; justify-content:space-between; gap:24px; margin-top:6px; font-weight:700; font-size:1.05rem"><span>A financiar en '.e($plan->name).'</span><span>'.Money::format($result['financed_amount']).'</span></div>'
             .$cuota.$schedule.'</div>';
     }
 
