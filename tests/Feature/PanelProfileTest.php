@@ -73,3 +73,10 @@ it('muestra el logo de Cali dentro del panel y en el login', function () {
         ->assertOk()
         ->assertSee('cali-login-logo', false);
 });
+
+it('el login dice Ingrese a su cuenta', function () {
+    $this->get('http://'.config('domains.panel').'/login')
+        ->assertOk()
+        ->assertSee('Ingrese a su cuenta')
+        ->assertDontSee('Entre a su cuenta');
+});
