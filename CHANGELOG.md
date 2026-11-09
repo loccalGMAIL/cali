@@ -13,6 +13,12 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+### Agregado
+- Soporte para correr detrás de un proxy con SSL (Traefik): la aplicación confía en las cabeceras `X-Forwarded-*`
+  (`TRUSTED_PROXIES` en el `.env`, por defecto `*`), así los enlaces, las redirecciones y los assets
+  salen con `https://`. El `.env.example` documenta los valores de producción para
+  `app.cali.pez.com.ar` y `cali.pez.com.ar`.
+
 ### Cambiado
 - Login: el título pasa de "Entre a su cuenta" a "Ingrese a su cuenta".
 
