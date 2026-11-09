@@ -12,7 +12,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // En producción el SSL termina en el proxy (Traefik): sin confiar en sus cabeceras X-Forwarded-*
+        // la aplicación creería que es http y generaría enlaces, redirecciones y assets con http://.
+        // TRUSTED_PROXIES acepta `*` (por defecto) o una lista de IPs/CIDR separadas por coma.
+        $proxies = (string) env('TRUSTED_PROXIES', '*');
+
+        $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

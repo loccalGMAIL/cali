@@ -33,6 +33,8 @@ use Illuminate\Support\Collection;
  * a mano. Es determinístico: siempre genera los mismos datos.
  *
  *     php artisan migrate:fresh && php artisan db:seed --class=DemoSeeder
+ *
+ * En producción `db:seed` pide confirmación (o `--force`); el seeder no hace nada si ya hay ventas.
  */
 class DemoSeeder extends Seeder
 {
@@ -76,12 +78,6 @@ class DemoSeeder extends Seeder
 
     public function run(): void
     {
-        if (app()->isProduction()) {
-            $this->command?->error('El seeder de demostración no se ejecuta en producción.');
-
-            return;
-        }
-
         if (Sale::query()->exists()) {
             $this->command?->warn('Ya hay ventas cargadas: los datos de demostración se pensaron para una base vacía. No se hizo nada.');
 
