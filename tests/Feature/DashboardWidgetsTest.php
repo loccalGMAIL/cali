@@ -5,7 +5,9 @@ use App\Actions\CreatePurchase;
 use App\Actions\CreateSale;
 use App\Actions\RegisterPayment;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Payments\PaymentResource;
+use App\Filament\Resources\Purchases\PurchaseResource;
 use App\Filament\Widgets\CollectionsOverview;
 use App\Filament\Widgets\LatestPurchases;
 use App\Filament\Widgets\LowStockProducts;
@@ -180,4 +182,25 @@ it('las últimas compras muestran las 10 más recientes y sin anuladas', functio
         ->assertCountTableRecords(10)
         ->assertCanSeeTableRecords($purchases->slice(1, 10))      // de la 2 a la 11
         ->assertCanNotSeeTableRecords([$purchases[0], $purchases[11]]);
+});
+
+it('el dashboard tiene accesos directos a cobrar, nuevo cliente y nueva compra', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(Dashboard::class)
+        ->assertActionVisible('collect')
+        ->assertActionHasUrl('collect', PaymentResource::getUrl('create'))
+        ->assertActionVisible('newCustomer')
+        ->assertActionHasUrl('newCustomer', CustomerResource::getUrl('create'))
+        ->assertActionVisible('newPurchase')
+        ->assertActionHasUrl('newPurchase', PurchaseResource::getUrl('create'));
+});
+
+it('los accesos directos respetan los permisos: un vendedor solo ve el de cliente', function () {
+    $this->actingAs(User::factory()->seller()->create());
+
+    Livewire::test(Dashboard::class)
+        ->assertActionHidden('collect')
+        ->assertActionVisible('newCustomer')
+        ->assertActionHidden('newPurchase');
 });
