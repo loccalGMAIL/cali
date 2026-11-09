@@ -204,3 +204,12 @@ it('los accesos directos respetan los permisos: un vendedor solo ve el de client
         ->assertActionVisible('newCustomer')
         ->assertActionHidden('newPurchase');
 });
+
+it('los accesos directos del dashboard se llaman Cobrar, Nuevo Cliente y Nueva Compra', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(Dashboard::class)
+        ->assertSee('Cobrar')
+        ->assertSee('Nuevo Cliente')
+        ->assertSee('Nueva Compra');
+});

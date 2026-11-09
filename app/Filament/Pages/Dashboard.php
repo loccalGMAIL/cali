@@ -28,13 +28,13 @@ class Dashboard extends BaseDashboard
                 ->url(fn (): string => PaymentResource::getUrl('create'))
                 ->visible(fn (): bool => PaymentResource::canCreate()),
             Action::make('newCustomer')
-                ->label('Cliente')
+                ->label('Nuevo Cliente')
                 ->icon(Heroicon::OutlinedUserPlus)
                 ->color('gray')
                 ->url(fn (): string => CustomerResource::getUrl('create'))
                 ->visible(fn (): bool => CustomerResource::canCreate()),
             Action::make('newPurchase')
-                ->label('Compra')
+                ->label('Nueva Compra')
                 ->icon(Heroicon::OutlinedShoppingCart)
                 ->color('gray')
                 ->url(fn (): string => PurchaseResource::getUrl('create'))
