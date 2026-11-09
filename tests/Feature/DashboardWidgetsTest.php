@@ -8,6 +8,7 @@ use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Payments\PaymentResource;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
+use App\Filament\Resources\Sales\SaleResource;
 use App\Filament\Widgets\CollectionsOverview;
 use App\Filament\Widgets\LatestPurchases;
 use App\Filament\Widgets\OverdueInstallments;
@@ -183,10 +184,12 @@ it('las últimas compras muestran las 10 más recientes y sin anuladas', functio
         ->assertCanNotSeeTableRecords([$purchases[0], $purchases[11]]);
 });
 
-it('el dashboard tiene accesos directos a cobrar, nuevo cliente y nueva orden de compra', function () {
+it('el dashboard tiene accesos directos a nueva venta, cobrar, nuevo cliente y nueva orden de compra', function () {
     $this->actingAs($this->admin);
 
     Livewire::test(Dashboard::class)
+        ->assertActionVisible('newSale')
+        ->assertActionHasUrl('newSale', SaleResource::getUrl('create'))
         ->assertActionVisible('collect')
         ->assertActionHasUrl('collect', PaymentResource::getUrl('create'))
         ->assertActionVisible('newCustomer')
@@ -195,19 +198,21 @@ it('el dashboard tiene accesos directos a cobrar, nuevo cliente y nueva orden de
         ->assertActionHasUrl('newPurchaseOrder', PurchaseOrderResource::getUrl('create'));
 });
 
-it('los accesos directos respetan los permisos: un vendedor solo ve el de cliente', function () {
+it('los accesos directos respetan los permisos: un vendedor solo ve los de venta y cliente', function () {
     $this->actingAs(User::factory()->seller()->create());
 
     Livewire::test(Dashboard::class)
+        ->assertActionVisible('newSale')
         ->assertActionHidden('collect')
         ->assertActionVisible('newCustomer')
         ->assertActionHidden('newPurchaseOrder');
 });
 
-it('los accesos directos del dashboard se llaman Cobrar, Nuevo Cliente y Nueva Orden de Compra', function () {
+it('los accesos directos del dashboard se llaman Nueva Venta, Cobrar, Nuevo Cliente y Nueva Orden de Compra', function () {
     $this->actingAs($this->admin);
 
     Livewire::test(Dashboard::class)
+        ->assertSee('Nueva Venta')
         ->assertSee('Cobrar')
         ->assertSee('Nuevo Cliente')
         ->assertSee('Nueva Orden de Compra');

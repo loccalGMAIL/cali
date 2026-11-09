@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Payments\PaymentResource;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
+use App\Filament\Resources\Sales\SaleResource;
 use Filament\Actions\Action;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Support\Icons\Heroicon;
@@ -21,6 +22,11 @@ class Dashboard extends BaseDashboard
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('newSale')
+                ->label('Nueva Venta')
+                ->icon(Heroicon::OutlinedShoppingCart)
+                ->url(fn (): string => SaleResource::getUrl('create'))
+                ->visible(fn (): bool => SaleResource::canCreate()),
             Action::make('collect')
                 ->label('Cobrar')
                 ->icon(Heroicon::OutlinedBanknotes)

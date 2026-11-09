@@ -13,6 +13,21 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+Requiere correr `php artisan migrate` (agrega la columna `is_default_seller` a `users`).
+
+### Agregado
+- **Borrar usuarios** desde la tabla y desde la edición. No se puede borrar a uno mismo ni a un
+  usuario con ventas, cobros u operaciones de compra registradas (se avisa que hay que desactivarlo).
+- **Vendedor por defecto**: se marca desde la tabla de usuarios o en su ficha (solo puede haber
+  uno). Es el que se propone al cargar una venta; un vendedor sigue cargando siempre a su nombre.
+- Dashboard: acceso directo **Nueva Venta**.
+- Venta: botón **+** al lado del selector de producto para dar de alta uno nuevo sin salir de la
+  venta (solo para quien puede crear productos).
+
+### Cambiado
+- Formulario de venta reordenado: primero fecha, cliente y vendedor; después los productos; y en
+  **Pago** el plan de financiación, la fecha de la primera cuota, el anticipo y su medio de pago.
+
 ## [0.2.0] - 2026-11-09
 
 Cambia el circuito de compras: el negocio no maneja stock. Primero se vende y después se le

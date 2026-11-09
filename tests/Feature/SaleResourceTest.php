@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Support\SalePreview;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Repeater;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -213,4 +214,68 @@ it('avisa en pantalla si la venta tiene cobros imputados', function () {
         ->assertNotified('No se pudo anular');
 
     expect($sale->fresh()->isCancelled())->toBeFalse();
+});
+
+it('propone el vendedor por defecto al cargar una venta', function () {
+    $admin = User::factory()->admin()->create();
+    $defaultSeller = User::factory()->seller()->create(['is_default_seller' => true]);
+    $this->actingAs($admin);
+
+    Livewire::test(CreateSale::class)
+        ->assertSchemaStateSet(['seller_id' => $defaultSeller->id]);
+});
+
+it('sin vendedor por defecto activo propone a quien carga la venta', function () {
+    $admin = User::factory()->admin()->create();
+    User::factory()->seller()->inactive()->create(['is_default_seller' => true]);
+    $this->actingAs($admin);
+
+    Livewire::test(CreateSale::class)
+        ->assertSchemaStateSet(['seller_id' => $admin->id]);
+});
+
+it('el vendedor que carga la venta queda propuesto aunque haya otro por defecto', function () {
+    $seller = User::factory()->seller()->create();
+    User::factory()->seller()->create(['is_default_seller' => true]);
+    $this->actingAs($seller);
+
+    Livewire::test(CreateSale::class)
+        ->assertSchemaStateSet(['seller_id' => $seller->id]);
+});
+
+it('el formulario de venta pide fecha, cliente y vendedor; después productos; y en pago el plan y la primera cuota', function () {
+    $this->actingAs(User::factory()->admin()->create());
+
+    Livewire::test(CreateSale::class)
+        ->assertSeeInOrder(['Fecha de la venta', 'Cliente', 'Vendedor', 'Productos', 'Pago', 'Plan de financiación', 'Fecha de la primera cuota', 'Anticipo']);
+});
+
+it('crea un producto nuevo desde el selector de productos de la venta', function () {
+    $this->actingAs(User::factory()->admin()->create());
+    $undoRepeaterFake = Repeater::fake();
+
+    Livewire::test(CreateSale::class)
+        ->fillForm(['items' => [['product_id' => null, 'quantity' => 1, 'unit_cost' => null, 'unit_margin' => 0]]])
+        ->assertActionVisible(TestAction::make('createOption')->schemaComponent('items.0.product_id', schema: 'form'))
+        ->callAction(
+            TestAction::make('createOption')->schemaComponent('items.0.product_id', schema: 'form'),
+            data: ['name' => 'Heladera nueva', 'brand' => 'Marca X', 'active' => true],
+        )
+        ->assertHasNoFormErrors()
+        ->assertSchemaStateSet(['items.0.product_id' => Product::where('name', 'Heladera nueva')->value('id')]);
+
+    $undoRepeaterFake();
+
+    expect(Product::where('name', 'Heladera nueva')->where('brand', 'Marca X')->exists())->toBeTrue();
+});
+
+it('el vendedor no ve la opción de crear productos desde la venta', function () {
+    $this->actingAs(User::factory()->seller()->create());
+    $undoRepeaterFake = Repeater::fake();
+
+    Livewire::test(CreateSale::class)
+        ->fillForm(['items' => [['product_id' => null, 'quantity' => 1, 'unit_cost' => null, 'unit_margin' => 0]]])
+        ->assertActionHidden(TestAction::make('createOption')->schemaComponent('items.0.product_id', schema: 'form'));
+
+    $undoRepeaterFake();
 });
