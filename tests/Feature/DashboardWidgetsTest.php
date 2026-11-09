@@ -120,7 +120,7 @@ it('la tabla de vencidas ofrece cobrar con el cliente elegido', function () {
 
     Livewire::test(OverdueInstallments::class)
         ->assertActionVisible(TestAction::make('collect')->table($installment))
-        ->assertActionHasUrl(TestAction::make('collect')->table($installment), PaymentResource::getUrl('create', ['customer' => $this->customer->id]));
+        ->assertActionHasUrl(TestAction::make('collect')->table($installment), PaymentResource::getUrl('create', ['customer' => $this->customer->id, 'installment' => $installment->id]));
 });
 
 it('la tabla de vencidas está vacía si no hay deuda atrasada', function () {

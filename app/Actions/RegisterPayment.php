@@ -17,6 +17,7 @@ use App\Services\ActivityLogger;
 use App\Services\PaymentAllocator;
 use App\Support\Money;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -33,9 +34,13 @@ class RegisterPayment
      * Registra un cobro y lo imputa a las cuotas del cliente, la de vencimiento más viejo primero.
      * Admite pagos parciales y adelantados; no admite cobrar más que la deuda total.
      *
+     * Si se indican cuotas (`installment_ids`), el cobro se imputa solo a esas, también de la más
+     * vieja a la más nueva, y no puede superar su saldo. Sin cuotas indicadas, se imputa a toda la deuda.
+     *
      * @param  array{
      *     customer_id: int,
      *     amount: string|int|float,
+     *     installment_ids?: array<int|string>|null,
      *     date?: CarbonInterface|string|null,
      *     method?: PaymentMethod|string|null,
      *     notes?: string|null
@@ -57,6 +62,12 @@ class RegisterPayment
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
+
+            $selected = array_values(array_unique(array_map('intval', $data['installment_ids'] ?? [])));
+
+            if ($selected !== []) {
+                $installments = $this->restrictToSelection($installments, $selected, $data['amount']);
+            }
 
             try {
                 $allocations = $this->allocator->allocate(
@@ -115,12 +126,42 @@ class RegisterPayment
                 ActivityEvent::Created,
                 "Registró el cobro #{$payment->getKey()} de ".Money::format($amount)." a {$customer->name}",
                 $payment,
-                ['amount' => $amount, 'method' => $payment->method->value, 'installments' => count($allocations)],
+                ['amount' => $amount, 'method' => $payment->method->value, 'installments' => count($allocations), 'chosen_installments' => $selected !== []],
                 $user,
             );
 
             return $payment->load('installments');
         });
+    }
+
+    /**
+     * Deja solo las cuotas elegidas, si siguen pendientes y son del cliente, y verifica que el monto
+     * no supere su saldo.
+     *
+     * @param  Collection<int, Installment>  $installments  Las cuotas pendientes del cliente, por id.
+     * @param  list<int>  $selected
+     * @return Collection<int, Installment>
+     *
+     * @throws ValidationException
+     */
+    private function restrictToSelection(Collection $installments, array $selected, string|int|float $amount): Collection
+    {
+        if (array_diff($selected, $installments->keys()->all()) !== []) {
+            throw ValidationException::withMessages([
+                'installment_ids' => 'Alguna de las cuotas elegidas ya no está pendiente o no es de este cliente.',
+            ]);
+        }
+
+        $chosen = $installments->only($selected)->keyBy('id');
+        $balance = $chosen->reduce(fn (string $carry, Installment $installment): string => bcadd($carry, $installment->balance(), 2), '0.00');
+
+        if (bccomp(number_format((float) $amount, 2, '.', ''), $balance, 2) > 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'El monto supera el saldo de las cuotas elegidas ('.Money::format($balance).').',
+            ]);
+        }
+
+        return $chosen;
     }
 
     /**

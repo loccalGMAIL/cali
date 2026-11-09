@@ -177,3 +177,127 @@ it('no toca las cuotas de otro cliente', function () {
 
     expect($otherSale->installments()->where('paid_amount', '>', 0)->count())->toBe(0);
 });
+
+it('imputa solo a las cuotas elegidas, aunque haya otras más viejas', function () {
+    $sale = makeSale($this->customer, $this->admin);
+    $installments = $sale->installments()->get();
+
+    $payment = app(RegisterPayment::class)->handle([
+        'customer_id' => $this->customer->id,
+        'amount' => 400,
+        'installment_ids' => [$installments[2]->id],
+    ], $this->admin);
+
+    $fresh = $sale->installments()->get();
+
+    expect($fresh[0]->status)->toBe(InstallmentStatus::Pending)
+        ->and($fresh[1]->status)->toBe(InstallmentStatus::Pending)
+        ->and($fresh[2]->status)->toBe(InstallmentStatus::Paid)
+        ->and($payment->installments)->toHaveCount(1)
+        ->and($payment->installments->first()->id)->toBe($installments[2]->id);
+});
+
+it('reparte un cobro entre las cuotas elegidas, de la más vieja a la más nueva', function () {
+    $sale = makeSale($this->customer, $this->admin);
+    $installments = $sale->installments()->get();
+
+    app(RegisterPayment::class)->handle([
+        'customer_id' => $this->customer->id,
+        'amount' => 500,
+        // en desorden a propósito: el orden lo define el vencimiento, no el orden de la lista
+        'installment_ids' => [$installments[2]->id, $installments[1]->id],
+    ], $this->admin);
+
+    $fresh = $sale->installments()->get();
+
+    expect($fresh[0]->paid_amount)->toBe('0.00')
+        ->and($fresh[1]->status)->toBe(InstallmentStatus::Paid)
+        ->and($fresh[2]->paid_amount)->toBe('100.00')
+        ->and($fresh[2]->status)->toBe(InstallmentStatus::Partial);
+});
+
+it('admite un pago parcial dentro de una sola cuota elegida', function () {
+    $sale = makeSale($this->customer, $this->admin);
+    $installments = $sale->installments()->get();
+
+    app(RegisterPayment::class)->handle([
+        'customer_id' => $this->customer->id,
+        'amount' => 150,
+        'installment_ids' => [$installments[1]->id],
+    ], $this->admin);
+
+    expect($sale->installments()->get()[1]->paid_amount)->toBe('150.00');
+});
+
+it('rechaza un monto mayor al saldo de las cuotas elegidas aunque el cliente deba más', function () {
+    $sale = makeSale($this->customer, $this->admin);
+
+    expect(fn () => app(RegisterPayment::class)->handle([
+        'customer_id' => $this->customer->id,
+        'amount' => 400.01,
+        'installment_ids' => [$sale->installments()->first()->id],
+    ], $this->admin))->toThrow(ValidationException::class, 'saldo de las cuotas elegidas');
+
+    expect(Payment::count())->toBe(0)->and($this->customer->debt())->toBe('1200.00');
+});
+
+it('rechaza cuotas de otro cliente', function () {
+    makeSale($this->customer, $this->admin);
+    $other = Customer::factory()->create();
+    $foreign = makeSale($other, $this->admin)->installments()->first();
+
+    expect(fn () => app(RegisterPayment::class)->handle([
+        'customer_id' => $this->customer->id,
+        'amount' => 100,
+        'installment_ids' => [$foreign->id],
+    ], $this->admin))->toThrow(ValidationException::class, 'no es de este cliente');
+
+    expect($foreign->fresh()->paid_amount)->toBe('0.00');
+});
+
+it('rechaza una cuota que ya está paga', function () {
+    $sale = makeSale($this->customer, $this->admin);
+    $first = $sale->installments()->first();
+    app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 400, 'installment_ids' => [$first->id]], $this->admin);
+
+    expect(fn () => app(RegisterPayment::class)->handle([
+        'customer_id' => $this->customer->id,
+        'amount' => 100,
+        'installment_ids' => [$first->id],
+    ], $this->admin))->toThrow(ValidationException::class, 'ya no está pendiente');
+});
+
+it('ignora ids repetidos y acepta ids como texto', function () {
+    $sale = makeSale($this->customer, $this->admin);
+    $first = $sale->installments()->first();
+
+    app(RegisterPayment::class)->handle([
+        'customer_id' => $this->customer->id,
+        'amount' => 400,
+        'installment_ids' => [(string) $first->id, $first->id],
+    ], $this->admin);
+
+    expect($first->fresh()->status)->toBe(InstallmentStatus::Paid);
+});
+
+it('con la selección, la cuenta corriente baja lo cobrado y coincide con la deuda', function () {
+    $sale = makeSale($this->customer, $this->admin);
+
+    app(RegisterPayment::class)->handle([
+        'customer_id' => $this->customer->id,
+        'amount' => 400,
+        'installment_ids' => [$sale->installments()->get()[2]->id],
+    ], $this->admin);
+
+    $balance = AccountMovement::where('customer_id', $this->customer->id)->latest('id')->value('balance');
+
+    expect($balance)->toBe('800.00')->toBe($this->customer->debt());
+});
+
+it('sin cuotas elegidas sigue imputando a toda la deuda, la más vieja primero', function () {
+    $sale = makeSale($this->customer, $this->admin);
+
+    app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 400, 'installment_ids' => []], $this->admin);
+
+    expect($sale->installments()->first()->status)->toBe(InstallmentStatus::Paid);
+});

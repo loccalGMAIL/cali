@@ -43,7 +43,7 @@ class OverdueInstallments extends TableWidget
             ])
             ->recordActions([
                 Action::make('collect')->label('Cobrar')->icon(Heroicon::OutlinedBanknotes)->color('success')
-                    ->url(fn (Installment $record): string => PaymentResource::getUrl('create', ['customer' => $record->customer_id]))
+                    ->url(fn (Installment $record): string => PaymentResource::getUrl('create', ['customer' => $record->customer_id, 'installment' => $record->getKey()]))
                     ->visible(fn (): bool => PaymentResource::canCreate()),
             ])
             ->emptyStateHeading('No hay cuotas vencidas')
