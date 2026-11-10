@@ -15,10 +15,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * No se maneja stock: todo lo vendido se compra después al proveedor con una orden de compra.
  * El último costo lo fija la factura de compra más reciente y se sugiere al cargar una venta.
+ * El flete (opcional, por unidad) también se sugiere al vender y se suma al precio.
  *
  * @property string $last_cost
+ * @property string $freight
  */
-#[Fillable(['sku', 'name', 'brand', 'description', 'active', 'supplier_id', 'last_cost'])]
+#[Fillable(['sku', 'name', 'brand', 'description', 'active', 'supplier_id', 'last_cost', 'freight'])]
 class Product extends Model implements ActivityLoggable
 {
     /** @use HasFactory<ProductFactory> */
@@ -32,6 +34,7 @@ class Product extends Model implements ActivityLoggable
         return [
             'active' => 'boolean',
             'last_cost' => 'decimal:2',
+            'freight' => 'decimal:2',
         ];
     }
 

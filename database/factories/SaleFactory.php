@@ -30,6 +30,7 @@ class SaleFactory extends Factory
             'installments_count' => 3,
             'total' => 1000,
             'total_cost' => 600,
+            'total_freight' => 0,
             'down_payment' => 0,
             'financed_amount' => 1000,
             'first_due_date' => today()->addMonth()->toDateString(),

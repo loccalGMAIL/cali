@@ -26,8 +26,9 @@ class SaleInfolist
                         TextEntry::make('financingPlan.name')->label('Plan')
                             ->formatStateUsing(fn ($state, $record): string => "{$state} ({$record->installments_count} ".($record->installments_count === 1 ? 'cuota' : 'cuotas').')'),
                         TextEntry::make('total_cost')->label('Costo')->money('ARS', locale: 'es_AR'),
+                        TextEntry::make('total_freight')->label('Flete')->money('ARS', locale: 'es_AR'),
                         TextEntry::make('margin')->label('Margen')->money('ARS', locale: 'es_AR')
-                            ->state(fn (Sale $record): string => bcsub($record->total, $record->total_cost, 2)),
+                            ->state(fn (Sale $record): string => bcsub(bcsub($record->total, $record->total_cost, 2), $record->total_freight, 2)),
                         TextEntry::make('total')->label('Total')->money('ARS', locale: 'es_AR')->weight('bold'),
                         TextEntry::make('down_payment')->label('Anticipo')->money('ARS', locale: 'es_AR'),
                         TextEntry::make('financed_amount')->label('Financiado')->money('ARS', locale: 'es_AR'),
@@ -45,11 +46,12 @@ class SaleInfolist
                 Section::make('Productos')
                     ->columnSpanFull()
                     ->schema([
-                        RepeatableEntry::make('items')->label('')->columns(7)
+                        RepeatableEntry::make('items')->label('')->columns(8)
                             ->schema([
                                 TextEntry::make('product.name')->label('Producto'),
                                 TextEntry::make('quantity')->label('Cantidad'),
                                 TextEntry::make('unit_cost')->label('Costo unitario')->money('ARS', locale: 'es_AR'),
+                                TextEntry::make('unit_freight')->label('Flete unitario')->money('ARS', locale: 'es_AR'),
                                 TextEntry::make('unit_margin')->label('Margen unitario')->money('ARS', locale: 'es_AR'),
                                 TextEntry::make('unit_price')->label('Precio unitario')->money('ARS', locale: 'es_AR'),
                                 TextEntry::make('subtotal')->label('Subtotal')->money('ARS', locale: 'es_AR'),

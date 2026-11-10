@@ -50,6 +50,32 @@ it('carga una venta desde el panel con costo y margen, y deja cuotas y pendiente
         ->and($sale->items->first()->pending_quantity)->toBe(1);
 });
 
+it('carga una venta desde el panel con flete y lo divide en las cuotas', function () {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+
+    Livewire::test(CreateSale::class)
+        ->fillForm([
+            'customer_id' => $this->customer->id,
+            'seller_id' => $admin->id,
+            'financing_plan_id' => $this->plan->id,
+            'date' => '2026-11-07',
+            'first_due_date' => '2026-12-07',
+            'down_payment' => 0,
+            'down_payment_method' => 'cash',
+            'items' => [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_freight' => 300, 'unit_margin' => 300]],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    // (600 + 300 + 300) ÷ 3 = 400
+    $sale = Sale::firstOrFail();
+    expect($sale->total)->toBe('1200.00')
+        ->and($sale->total_freight)->toBe('300.00')
+        ->and($sale->items->first()->unit_freight)->toBe('300.00')
+        ->and($sale->installments->pluck('amount')->all())->toBe(['400.00', '400.00', '400.00']);
+});
+
 it('muestra en el formulario el error de un anticipo mayor al total', function () {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin);
@@ -133,6 +159,22 @@ it('la vista previa muestra total, cuota y cronograma', function () {
         ->and($html)->toContain('3 cuotas de $ 320,00')
         ->and($html)->toContain('07/12/2026')
         ->and($html)->toContain('07/02/2027');
+});
+
+it('la vista previa muestra el flete y lo incluye en las cuotas', function () {
+    $html = (string) SalePreview::render(
+        [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_freight' => 240, 'unit_margin' => 360]],
+        $this->plan->id,
+        '2026-12-07',
+        0,
+    );
+
+    // (600 + 240 + 360) ÷ 3 = 400
+    expect($html)->toContain('Flete')
+        ->and($html)->toContain('$ 240,00')
+        ->and($html)->toContain('$ 360,00')
+        ->and($html)->toContain('$ 1.200,00')
+        ->and($html)->toContain('3 cuotas de $ 400,00');
 });
 
 it('la vista previa avisa si el anticipo supera el total', function () {

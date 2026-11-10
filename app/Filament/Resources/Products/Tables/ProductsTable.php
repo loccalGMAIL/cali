@@ -22,6 +22,7 @@ class ProductsTable
                 TextColumn::make('brand')->label('Marca')->searchable()->toggleable(),
                 TextColumn::make('supplier.name')->label('Proveedor habitual')->placeholder('—')->toggleable(),
                 TextColumn::make('last_cost')->label('Último costo')->money('ARS', locale: 'es_AR')->sortable(),
+                TextColumn::make('freight')->label('Flete')->money('ARS', locale: 'es_AR')->sortable()->toggleable(),
                 IconColumn::make('active')->label('Activo')->boolean(),
             ])
             ->defaultSort('name')

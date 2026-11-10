@@ -14,7 +14,7 @@ use InvalidArgumentException;
 class SalePreview
 {
     /**
-     * @param  array<array-key, array{product_id?: mixed, quantity?: mixed, unit_cost?: mixed, unit_margin?: mixed}>  $items
+     * @param  array<array-key, array{product_id?: mixed, quantity?: mixed, unit_cost?: mixed, unit_freight?: mixed, unit_margin?: mixed}>  $items
      */
     public static function render(array $items, mixed $planId, mixed $firstDueDate, mixed $downPayment): HtmlString
     {
@@ -35,7 +35,12 @@ class SalePreview
         $lines = array_map(fn (array $item): array => [
             'quantity' => (int) ($item['quantity'] ?? 0),
             'unit_cost' => self::number($item['unit_cost'] ?? 0),
-            'unit_price' => $calculator->unitPrice(self::number($item['unit_cost'] ?? 0), self::number($item['unit_margin'] ?? 0)),
+            'unit_freight' => self::number($item['unit_freight'] ?? 0),
+            'unit_price' => $calculator->unitPrice(
+                self::number($item['unit_cost'] ?? 0),
+                self::number($item['unit_margin'] ?? 0),
+                self::number($item['unit_freight'] ?? 0),
+            ),
         ], $items);
 
         try {
@@ -75,8 +80,9 @@ class SalePreview
 
         $summary = [
             'Costo' => Money::format($result['total_cost']),
-            'Margen' => Money::format(bcsub($result['total'], $result['total_cost'], 2)),
-            'Total de la venta (costo + margen)' => Money::format($result['total']),
+            'Flete' => Money::format($result['total_freight']),
+            'Margen' => Money::format(bcsub(bcsub($result['total'], $result['total_cost'], 2), $result['total_freight'], 2)),
+            'Total de la venta (costo + flete + margen)' => Money::format($result['total']),
             'Anticipo' => Money::format($result['down_payment']),
         ];
 

@@ -55,7 +55,7 @@ class SaleForm
                     ->schema([
                         Repeater::make('items')->label('Ítems')
                             ->addActionLabel('Agregar producto')
-                            ->minItems(1)->required()->live()->columns(6)->defaultItems(1)
+                            ->minItems(1)->required()->live()->columns(7)->defaultItems(1)
                             ->schema([
                                 Select::make('product_id')->label('Producto')
                                     ->options(fn (): array => Product::query()->active()->orderBy('name')->pluck('name', 'id')->all())
@@ -67,16 +67,19 @@ class SaleForm
                                         ->modalWidth('4xl')
                                         ->visible(fn (): bool => ProductResource::canCreate()))
                                     ->afterStateUpdated(function (?string $state, Set $set): void {
-                                        // Se sugiere el costo de la última factura de compra; se puede cambiar.
+                                        // Se sugieren el costo de la última factura de compra y el flete del producto; se pueden cambiar.
                                         if ($state !== null && ($product = Product::find($state))) {
                                             $set('unit_cost', $product->last_cost);
+                                            $set('unit_freight', $product->freight);
                                         }
                                     }),
                                 TextInput::make('quantity')->label('Cantidad')->required()->integer()->minValue(1)->default(1)->live(onBlur: true),
                                 TextInput::make('unit_cost')->label('Costo unitario')->required()->numeric()->minValue(0)->prefix('$')->live(onBlur: true),
+                                TextInput::make('unit_freight')->label('Flete unitario')->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true)
+                                    ->dehydrateStateUsing(fn ($state) => $state === null || $state === '' ? 0 : $state),
                                 TextInput::make('unit_margin')->label('Margen unitario')->required()->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true),
                                 TextEntry::make('unit_price')->label('Precio unitario')
-                                    ->state(fn (Get $get): string => Money::format(self::unitPrice($get('unit_cost'), $get('unit_margin'))))
+                                    ->state(fn (Get $get): string => Money::format(self::unitPrice($get('unit_cost'), $get('unit_margin'), $get('unit_freight'))))
                                     ->weight('bold'),
                             ]),
                     ]),
@@ -130,11 +133,12 @@ class SaleForm
         return User::defaultSeller()?->getKey() ?? $user?->getKey();
     }
 
-    private static function unitPrice(mixed $unitCost, mixed $unitMargin): string
+    private static function unitPrice(mixed $unitCost, mixed $unitMargin, mixed $unitFreight): string
     {
         return (new SaleCalculator)->unitPrice(
             is_numeric($unitCost) ? (string) $unitCost : '0',
             is_numeric($unitMargin) ? (string) $unitMargin : '0',
+            is_numeric($unitFreight) ? (string) $unitFreight : '0',
         );
     }
 }

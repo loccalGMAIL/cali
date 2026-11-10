@@ -55,3 +55,39 @@ it('el producto guarda su proveedor habitual', function () {
 
     expect($product->fresh()->supplier->is($supplier))->toBeTrue();
 });
+
+it('el flete del producto se sugiere al vender junto con el costo', function () {
+    $product = Product::factory()->create(['last_cost' => 500, 'freight' => 80]);
+
+    Livewire::test(CreateSale::class)
+        ->fillForm(['items' => [['product_id' => null, 'quantity' => 1, 'unit_margin' => 0]]])
+        ->fillForm(['items.0.product_id' => $product->id])
+        ->assertSchemaStateSet(['items.0.unit_cost' => '500.00', 'items.0.unit_freight' => '80.00']);
+});
+
+it('el producto guarda su flete, que es opcional', function () {
+    $product = Product::factory()->create();
+
+    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+        ->fillForm(['freight' => 1500])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($product->fresh()->freight)->toBe('1500.00');
+
+    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+        ->fillForm(['freight' => null])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($product->fresh()->freight)->toBe('0.00');
+});
+
+it('el flete del producto no puede ser negativo', function () {
+    $product = Product::factory()->create();
+
+    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+        ->fillForm(['freight' => -1])
+        ->call('save')
+        ->assertHasFormErrors(['freight' => 'min']);
+});

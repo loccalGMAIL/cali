@@ -17,6 +17,37 @@ it('el precio unitario es costo más margen', function () {
         ->and((new SaleCalculator)->unitPrice('0.10', 0))->toBe('0.10');
 });
 
+it('el precio unitario suma el flete al costo y al margen', function () {
+    expect((new SaleCalculator)->unitPrice(600, 400, 50))->toBe('1050.00')
+        ->and((new SaleCalculator)->unitPrice('600.10', '0', '0.25'))->toBe('600.35');
+});
+
+it('el flete integra el total y se divide en las cuotas junto con el resto', function () {
+    // (costo 600 + flete 100 + margen 500) × 2 = 2400; anticipo 300; quedan 2100 en 3 cuotas de 700.
+    $result = calc([['quantity' => 2, 'unit_price' => 1200, 'unit_cost' => 600, 'unit_freight' => 100]], 300, 3);
+
+    expect($result['total'])->toBe('2400.00')
+        ->and($result['total_cost'])->toBe('1200.00')
+        ->and($result['total_freight'])->toBe('200.00')
+        ->and($result['financed_amount'])->toBe('2100.00')
+        ->and(array_column($result['installments'], 'amount'))->toBe(['700.00', '700.00', '700.00']);
+});
+
+it('el flete no es ganancia: se reparte como costo entre anticipo y cuotas', function () {
+    // total 1200, costo 600 + flete 100 = 700 a recuperar; anticipo 300 -> 175; cuotas de 300 -> 175 cada una.
+    $result = calc([['quantity' => 1, 'unit_price' => 1200, 'unit_cost' => 600, 'unit_freight' => 100]], 300, 3);
+
+    $costSum = array_reduce($result['installments'], fn ($carry, $i) => bcadd($carry, $i['cost_portion'], 2), '0.00');
+
+    expect($result['down_payment_cost'])->toBe('175.00')
+        ->and(array_column($result['installments'], 'cost_portion'))->toBe(['175.00', '175.00', '175.00'])
+        ->and(bcadd($costSum, $result['down_payment_cost'], 2))->toBe(bcadd($result['total_cost'], $result['total_freight'], 2));
+});
+
+it('sin flete el total de flete es cero', function () {
+    expect(calc([line(1, 1200, 600)], 0, 3)['total_freight'])->toBe('0.00');
+});
+
 it('divide lo que queda después del anticipo en cuotas iguales, sin recargo', function () {
     // costo 600 + margen 600 = 1200; anticipo 300; quedan 900 en 3 cuotas de 300.
     $result = calc([line(1, 1200, 600)], 300, 3);
