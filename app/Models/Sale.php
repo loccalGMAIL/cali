@@ -18,10 +18,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $financed_amount
  * @property string $total
  * @property string $total_cost
+ * @property string $total_freight
  */
 #[Fillable([
     'customer_id', 'seller_id', 'date', 'financing_plan_id', 'installments_count',
-    'down_payment', 'financed_amount', 'total', 'total_cost', 'first_due_date', 'status', 'notes',
+    'down_payment', 'financed_amount', 'total', 'total_cost', 'total_freight', 'first_due_date', 'status', 'notes',
     'cancelled_at', 'cancelled_by', 'cancellation_reason',
 ])]
 class Sale extends Model
@@ -42,6 +43,7 @@ class Sale extends Model
             'financed_amount' => 'decimal:2',
             'total' => 'decimal:2',
             'total_cost' => 'decimal:2',
+            'total_freight' => 'decimal:2',
             'status' => SaleStatus::class,
             'cancelled_at' => 'datetime',
         ];

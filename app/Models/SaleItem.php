@@ -12,15 +12,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Ítem vendido. Precio unitario = costo + margen. `pending_quantity` es lo que todavía
+ * Ítem vendido. Precio unitario = costo + flete + margen. `pending_quantity` es lo que todavía
  * falta incluir en una orden de compra al proveedor.
  *
  * @property string $unit_cost
+ * @property string $unit_freight
  * @property string $unit_margin
  * @property string $unit_price
  * @property string $subtotal
  */
-#[Fillable(['sale_id', 'product_id', 'quantity', 'unit_cost', 'unit_margin', 'unit_price', 'subtotal', 'pending_quantity'])]
+#[Fillable(['sale_id', 'product_id', 'quantity', 'unit_cost', 'unit_freight', 'unit_margin', 'unit_price', 'subtotal', 'pending_quantity'])]
 class SaleItem extends Model
 {
     /** @use HasFactory<SaleItemFactory> */
@@ -34,6 +35,7 @@ class SaleItem extends Model
         return [
             'quantity' => 'integer',
             'unit_cost' => 'decimal:2',
+            'unit_freight' => 'decimal:2',
             'unit_margin' => 'decimal:2',
             'unit_price' => 'decimal:2',
             'subtotal' => 'decimal:2',

@@ -22,6 +22,7 @@ class SaleItemFactory extends Factory
             'product_id' => Product::factory(),
             'quantity' => 1,
             'unit_cost' => 600,
+            'unit_freight' => 0,
             'unit_margin' => 400,
             'unit_price' => 1000,
             'subtotal' => 1000,

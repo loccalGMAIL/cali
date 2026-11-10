@@ -76,6 +76,34 @@ it('guarda costo, margen y precio de cada ítem', function () {
         ->and($sale->total_cost)->toBe('1301.00');
 });
 
+it('guarda el flete de cada ítem, lo suma al precio y lo divide en las cuotas', function () {
+    $sale = app(CreateSale::class)->handle(
+        saleData($this->customer, $this->seller, $this->plan, ['down_payment' => 300]),
+        [['product_id' => $this->product->id, 'quantity' => 2, 'unit_cost' => 600, 'unit_freight' => 150, 'unit_margin' => 450]],
+        $this->admin,
+    );
+
+    $item = $sale->items->first();
+
+    // (600 + 150 + 450) × 2 = 2400; menos anticipo 300 = 2100 en 3 cuotas de 700.
+    expect($item->unit_freight)->toBe('150.00')
+        ->and($item->unit_price)->toBe('1200.00')
+        ->and($item->subtotal)->toBe('2400.00')
+        ->and($sale->total)->toBe('2400.00')
+        ->and($sale->total_cost)->toBe('1200.00')
+        ->and($sale->total_freight)->toBe('300.00')
+        ->and($sale->financed_amount)->toBe('2100.00')
+        ->and($sale->installments->pluck('amount')->all())->toBe(['700.00', '700.00', '700.00']);
+});
+
+it('el flete es opcional: sin flete el ítem vale costo + margen', function () {
+    $sale = app(CreateSale::class)->handle(saleData($this->customer, $this->seller, $this->plan), [($this->item)()], $this->admin);
+
+    expect($sale->items->first()->unit_freight)->toBe('0.00')
+        ->and($sale->total_freight)->toBe('0.00')
+        ->and($sale->total)->toBe('1200.00');
+});
+
 it('el costo cargado en la venta no cambia si después cambia el último costo del producto', function () {
     $sale = app(CreateSale::class)->handle(saleData($this->customer, $this->seller, $this->plan), [($this->item)()], $this->admin);
 
@@ -104,7 +132,7 @@ it('lo vendido queda pendiente de compra: no hay stock que controlar', function 
     expect($sale->items->pluck('pending_quantity')->all())->toBe([25, 3]);
 });
 
-it('rechaza costo o margen negativos y no deja nada guardado', function (array $overrides) {
+it('rechaza costo, flete o margen negativos y no deja nada guardado', function (array $overrides) {
     expect(fn () => app(CreateSale::class)->handle(
         saleData($this->customer, $this->seller, $this->plan),
         [array_merge(($this->item)(), $overrides)],
@@ -117,6 +145,7 @@ it('rechaza costo o margen negativos y no deja nada guardado', function (array $
 })->with([
     'costo negativo' => [['unit_cost' => -1]],
     'margen negativo' => [['unit_margin' => -1]],
+    'flete negativo' => [['unit_freight' => -1]],
     'cantidad cero' => [['quantity' => 0]],
 ]);
 

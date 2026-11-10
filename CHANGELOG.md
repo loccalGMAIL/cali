@@ -13,6 +13,20 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+Requiere correr `php artisan migrate` (agrega `freight` a `products`, `unit_freight` a `sale_items`
+y `total_freight` a `sales`, todas con 0 por defecto: las ventas existentes no cambian).
+
+### Agregado
+- **Flete** en los productos (opcional, por unidad). Se ve en la tabla de productos.
+- Venta: cada ítem tiene **flete unitario**, que se completa con el flete del producto al elegirlo
+  (se puede cambiar). Precio unitario = costo + flete + margen.
+- El resumen de la venta y su ficha muestran el flete por separado del costo y del margen.
+
+### Cambiado
+- **Cuotas**: (costo + flete + margen − anticipo) ÷ cantidad de cuotas. El flete integra el valor
+  del producto y se divide en las cuotas junto con el resto.
+- La porción de costo de cada cuota (lo que no es ganancia) incluye el flete.
+
 ## [0.3.0] - 2026-11-10
 
 Requiere correr `php artisan migrate` (agrega la columna `is_default_seller` a `users`).

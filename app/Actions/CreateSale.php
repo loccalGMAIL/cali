@@ -35,7 +35,8 @@ class CreateSale
      * deja los movimientos en la cuenta corriente y marca lo vendido como pendiente de compra
      * (no hay stock: todo se le pide después al proveedor). Todo ocurre en una única transacción.
      *
-     * Cada ítem vale costo + margen, ambos cargados al vender.
+     * Cada ítem vale costo + flete + margen, cargados al vender. El flete es opcional (si no viene
+     * es 0) y se divide en las cuotas junto con el resto.
      *
      * @param  array{
      *     customer_id: int,
@@ -47,7 +48,7 @@ class CreateSale
      *     down_payment_method?: PaymentMethod|string|null,
      *     notes?: string|null
      * }  $data
-     * @param  list<array{product_id: int, quantity: int, unit_cost: string|int|float, unit_margin: string|int|float}>  $items
+     * @param  list<array{product_id: int, quantity: int, unit_cost: string|int|float, unit_margin: string|int|float, unit_freight?: string|int|float|null}>  $items
      *
      * @throws ValidationException
      */
@@ -66,8 +67,9 @@ class CreateSale
             $lines = array_map(fn (array $item): array => [
                 'quantity' => (int) $item['quantity'],
                 'unit_cost' => $this->money($item['unit_cost']),
+                'unit_freight' => $this->money($item['unit_freight'] ?? 0),
                 'unit_margin' => $this->money($item['unit_margin']),
-                'unit_price' => $this->calculator->unitPrice($item['unit_cost'], $item['unit_margin']),
+                'unit_price' => $this->calculator->unitPrice($item['unit_cost'], $item['unit_margin'], $item['unit_freight'] ?? 0),
             ], $items);
 
             try {
@@ -89,6 +91,7 @@ class CreateSale
                 'installments_count' => $plan->installments_count,
                 'total' => $result['total'],
                 'total_cost' => $result['total_cost'],
+                'total_freight' => $result['total_freight'],
                 'down_payment' => $result['down_payment'],
                 'financed_amount' => $result['financed_amount'],
                 'first_due_date' => $data['first_due_date'],
@@ -103,6 +106,7 @@ class CreateSale
                     'product_id' => $item['product_id'],
                     'quantity' => $line['quantity'],
                     'unit_cost' => $line['unit_cost'],
+                    'unit_freight' => $line['unit_freight'],
                     'unit_margin' => $line['unit_margin'],
                     'unit_price' => $line['unit_price'],
                     'subtotal' => bcmul((string) $line['quantity'], $line['unit_price'], 2),
@@ -143,6 +147,7 @@ class CreateSale
                 [
                     'total' => $sale->total,
                     'total_cost' => $sale->total_cost,
+                    'total_freight' => $sale->total_freight,
                     'down_payment' => $sale->down_payment,
                     'installments_count' => $sale->installments_count,
                     'seller_id' => $sale->seller_id,
@@ -155,9 +160,9 @@ class CreateSale
     }
 
     /**
-     * Los productos tienen que existir y estar activos; cantidad, costo y margen no pueden ser negativos.
+     * Los productos tienen que existir y estar activos; cantidad, costo, flete y margen no pueden ser negativos.
      *
-     * @param  list<array{product_id: int, quantity: int, unit_cost: string|int|float, unit_margin: string|int|float}>  $items
+     * @param  list<array{product_id: int, quantity: int, unit_cost: string|int|float, unit_margin: string|int|float, unit_freight?: string|int|float|null}>  $items
      *
      * @throws ValidationException
      */
@@ -175,8 +180,8 @@ class CreateSale
                 throw ValidationException::withMessages(['items' => 'La cantidad de cada producto debe ser al menos 1.']);
             }
 
-            if ((float) $item['unit_cost'] < 0 || (float) $item['unit_margin'] < 0) {
-                throw ValidationException::withMessages(['items' => 'El costo y el margen no pueden ser negativos.']);
+            if ((float) $item['unit_cost'] < 0 || (float) $item['unit_margin'] < 0 || (float) ($item['unit_freight'] ?? 0) < 0) {
+                throw ValidationException::withMessages(['items' => 'El costo, el flete y el margen no pueden ser negativos.']);
             }
         }
     }
@@ -211,7 +216,7 @@ class CreateSale
         );
     }
 
-    private function money(string|int|float $value): string
+    private function money(string|int|float|null $value): string
     {
         return number_format((float) $value, 2, '.', '');
     }

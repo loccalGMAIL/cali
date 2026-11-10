@@ -22,6 +22,7 @@ class ProductFactory extends Factory
             'description' => null,
             'active' => true,
             'last_cost' => fake()->numberBetween(50000, 800000),
+            'freight' => 0,
         ];
     }
 }
