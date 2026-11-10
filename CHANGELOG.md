@@ -13,6 +13,8 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.3.0] - 2026-11-10
+
 Requiere correr `php artisan migrate` (agrega la columna `is_default_seller` a `users`).
 
 ### Agregado
@@ -153,7 +155,8 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.2.0...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/loccalGMAIL/cali/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/loccalGMAIL/cali/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/loccalGMAIL/cali/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/loccalGMAIL/cali/releases/tag/v0.1.0
