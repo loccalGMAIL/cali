@@ -17,8 +17,9 @@ use Illuminate\Notifications\Notifiable;
 
 /**
  * @property UserRole $role
+ * @property bool $is_default_seller
  */
-#[Fillable(['name', 'email', 'password', 'role', 'google_id', 'active'])]
+#[Fillable(['name', 'email', 'password', 'role', 'google_id', 'active', 'is_default_seller'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements ActivityLoggable, FilamentUser
 {
@@ -35,7 +36,42 @@ class User extends Authenticatable implements ActivityLoggable, FilamentUser
             'password' => 'hashed',
             'role' => UserRole::class,
             'active' => 'boolean',
+            'is_default_seller' => 'boolean',
         ];
+    }
+
+    /**
+     * Solo puede haber un vendedor por defecto: al marcar uno se desmarca el anterior.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (User $user): void {
+            if ($user->is_default_seller && ($user->wasRecentlyCreated || $user->wasChanged('is_default_seller'))) {
+                static::query()->whereKeyNot($user->getKey())->where('is_default_seller', true)
+                    ->get()
+                    ->each(fn (User $other): bool => $other->update(['is_default_seller' => false]));
+            }
+        });
+    }
+
+    /**
+     * Vendedor que se propone al cargar una venta (si está activo).
+     */
+    public static function defaultSeller(): ?self
+    {
+        return static::query()->where('is_default_seller', true)->where('active', true)->first();
+    }
+
+    /**
+     * Un usuario con ventas, cobros, órdenes o facturas de compra a su nombre no se puede borrar:
+     * se perdería el historial. En ese caso hay que desactivarlo.
+     */
+    public function hasRegisteredOperations(): bool
+    {
+        return Sale::query()->where('seller_id', $this->getKey())->exists()
+            || Payment::query()->where('collected_by', $this->getKey())->exists()
+            || PurchaseOrder::query()->where('user_id', $this->getKey())->exists()
+            || Purchase::query()->where('user_id', $this->getKey())->exists();
     }
 
     public function canAccessPanel(Panel $panel): bool

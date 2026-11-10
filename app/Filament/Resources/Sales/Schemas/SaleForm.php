@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Sales\Schemas;
 
 use App\Enums\PaymentMethod;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
+use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Models\Customer;
 use App\Models\FinancingPlan;
 use App\Models\Product;
@@ -33,6 +35,7 @@ class SaleForm
                     ->columns(3)
                     ->columnSpanFull()
                     ->schema([
+                        DatePicker::make('date')->label('Fecha de la venta')->default(now())->required(),
                         Select::make('customer_id')->label('Cliente')
                             ->options(fn (): array => Customer::query()->where('active', true)->orderBy('name')->pluck('name', 'id')->all())
                             ->searchable()->required()
@@ -42,16 +45,10 @@ class SaleForm
                             ->createOptionAction(fn (Action $action): Action => $action->modalWidth('3xl')),
                         Select::make('seller_id')->label('Vendedor')
                             ->options(fn (): array => User::query()->where('active', true)->orderBy('name')->pluck('name', 'id')->all())
-                            ->default(fn () => auth()->id())
+                            ->default(fn (): ?int => self::defaultSellerId())
                             ->required()->searchable()
                             ->disabled(fn (): bool => (bool) auth()->user()?->isSeller())
                             ->dehydrated(),
-                        Select::make('financing_plan_id')->label('Plan de financiación')
-                            ->options(fn (): array => FinancingPlan::query()->active()->pluck('name', 'id')->all())
-                            ->required()->live(),
-                        DatePicker::make('date')->label('Fecha de la venta')->default(now())->required(),
-                        DatePicker::make('first_due_date')->label('Vencimiento de la primera cuota')
-                            ->default(now()->addMonth())->required()->live(),
                     ]),
                 Section::make('Productos')
                     ->columnSpanFull()
@@ -63,6 +60,12 @@ class SaleForm
                                 Select::make('product_id')->label('Producto')
                                     ->options(fn (): array => Product::query()->active()->orderBy('name')->pluck('name', 'id')->all())
                                     ->searchable()->required()->live()->columnSpan(2)
+                                    ->createOptionForm(fn (Schema $schema): Schema => ProductForm::configure($schema))
+                                    ->createOptionUsing(fn (array $data): int => Product::create($data)->getKey())
+                                    ->createOptionModalHeading('Nuevo producto')
+                                    ->createOptionAction(fn (Action $action): Action => $action
+                                        ->modalWidth('4xl')
+                                        ->visible(fn (): bool => ProductResource::canCreate()))
                                     ->afterStateUpdated(function (?string $state, Set $set): void {
                                         // Se sugiere el costo de la última factura de compra; se puede cambiar.
                                         if ($state !== null && ($product = Product::find($state))) {
@@ -81,6 +84,11 @@ class SaleForm
                     ->columns(2)
                     ->columnSpanFull()
                     ->schema([
+                        Select::make('financing_plan_id')->label('Plan de financiación')
+                            ->options(fn (): array => FinancingPlan::query()->active()->pluck('name', 'id')->all())
+                            ->required()->live(),
+                        DatePicker::make('first_due_date')->label('Fecha de la primera cuota')
+                            ->default(now()->addMonth())->required()->live(),
                         TextInput::make('down_payment')->label('Anticipo')->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true)
                             ->dehydrateStateUsing(fn ($state) => $state === null || $state === '' ? 0 : $state),
                         Select::make('down_payment_method')->label('Medio de pago del anticipo')
@@ -106,6 +114,20 @@ class SaleForm
                         Textarea::make('notes')->label('Notas')->hiddenLabel(),
                     ]),
             ]);
+    }
+
+    /**
+     * El vendedor carga a su nombre; el resto arranca con el vendedor por defecto (o con quien carga).
+     */
+    private static function defaultSellerId(): ?int
+    {
+        $user = auth()->user();
+
+        if ($user?->isSeller()) {
+            return $user->getKey();
+        }
+
+        return User::defaultSeller()?->getKey() ?? $user?->getKey();
     }
 
     private static function unitPrice(mixed $unitCost, mixed $unitMargin): string
