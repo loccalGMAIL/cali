@@ -35,12 +35,10 @@ class ProductForm
                             ->columnSpan(['default' => 12, 'md' => 6]),
                         TextInput::make('last_cost')->label('Último costo')->prefix('$')
                             ->disabled()->dehydrated(false)
-                            ->helperText('Sale de la última factura de compra y se sugiere al vender.')
                             ->columnSpan(['default' => 12, 'md' => 3]),
                         TextInput::make('freight')->label('Flete')->prefix('$')
                             ->numeric()->minValue(0)->default(0)
                             ->dehydrateStateUsing(fn ($state) => $state === null || $state === '' ? 0 : $state)
-                            ->helperText('Opcional, por unidad. Se suma al precio de venta y se divide en las cuotas.')
                             ->columnSpan(['default' => 12, 'md' => 3]),
                         Textarea::make('description')->label('Descripción')->columnSpanFull(),
                     ]),

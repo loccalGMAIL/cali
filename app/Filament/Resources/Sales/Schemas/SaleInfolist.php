@@ -50,10 +50,10 @@ class SaleInfolist
                             ->schema([
                                 TextEntry::make('product.name')->label('Producto'),
                                 TextEntry::make('quantity')->label('Cantidad'),
-                                TextEntry::make('unit_cost')->label('Costo unitario')->money('ARS', locale: 'es_AR'),
-                                TextEntry::make('unit_freight')->label('Flete unitario')->money('ARS', locale: 'es_AR'),
-                                TextEntry::make('unit_margin')->label('Margen unitario')->money('ARS', locale: 'es_AR'),
-                                TextEntry::make('unit_price')->label('Precio unitario')->money('ARS', locale: 'es_AR'),
+                                TextEntry::make('unit_cost')->label('Costo')->money('ARS', locale: 'es_AR'),
+                                TextEntry::make('unit_freight')->label('Flete')->money('ARS', locale: 'es_AR'),
+                                TextEntry::make('unit_margin')->label('Margen')->money('ARS', locale: 'es_AR'),
+                                TextEntry::make('unit_price')->label('Precio')->money('ARS', locale: 'es_AR'),
                                 TextEntry::make('subtotal')->label('Subtotal')->money('ARS', locale: 'es_AR'),
                                 TextEntry::make('pending_quantity')->label('Pendiente de compra')
                                     ->formatStateUsing(fn (int $state): string => $state === 0 ? 'Pedido' : "{$state} sin pedir")

@@ -74,11 +74,11 @@ class SaleForm
                                         }
                                     }),
                                 TextInput::make('quantity')->label('Cantidad')->required()->integer()->minValue(1)->default(1)->live(onBlur: true),
-                                TextInput::make('unit_cost')->label('Costo unitario')->required()->numeric()->minValue(0)->prefix('$')->live(onBlur: true),
-                                TextInput::make('unit_freight')->label('Flete unitario')->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true)
+                                TextInput::make('unit_cost')->label('Costo')->required()->numeric()->minValue(0)->prefix('$')->live(onBlur: true),
+                                TextInput::make('unit_freight')->label('Flete')->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true)
                                     ->dehydrateStateUsing(fn ($state) => $state === null || $state === '' ? 0 : $state),
-                                TextInput::make('unit_margin')->label('Margen unitario')->required()->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true),
-                                TextEntry::make('unit_price')->label('Precio unitario')
+                                TextInput::make('unit_margin')->label('Margen')->required()->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true),
+                                TextEntry::make('unit_price')->label('Precio')
                                     ->state(fn (Get $get): string => Money::format(self::unitPrice($get('unit_cost'), $get('unit_margin'), $get('unit_freight'))))
                                     ->weight('bold'),
                             ]),
