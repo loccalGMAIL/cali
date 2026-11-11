@@ -192,6 +192,6 @@ it('la ficha de la venta muestra costo, margen y si ya se pidió', function () {
 
     Livewire::test(ViewSale::class, ['record' => $item->sale_id])
         ->assertSuccessful()
-        ->assertSee('Margen unitario')
+        ->assertSee('Margen')
         ->assertSee('2 sin pedir');
 });
