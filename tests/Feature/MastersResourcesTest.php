@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Resources\Categories\CategoryResource;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Customers\Pages\CreateCustomer;
 use App\Filament\Resources\FinancingPlans\FinancingPlanResource;
@@ -25,7 +26,7 @@ beforeEach(function () {
 it('permite al admin ver todos los listados', function () {
     $this->actingAs(User::factory()->admin()->create());
 
-    foreach ([CustomerResource::class, SupplierResource::class, ProductResource::class, FinancingPlanResource::class, UserResource::class] as $resource) {
+    foreach ([CustomerResource::class, SupplierResource::class, ProductResource::class, CategoryResource::class, FinancingPlanResource::class, UserResource::class] as $resource) {
         expect($resource::canViewAny())->toBeTrue();
     }
 });
@@ -119,7 +120,7 @@ it('crea un vendedor con contraseña hasheada', function () {
         ->and(Hash::check('secreto123', $user->password))->toBeTrue();
 });
 
-it('crea un producto sin código ni proveedor habitual', function () {
+it('genera el código del producto si no se carga y deja vacíos proveedor y categoría', function () {
     $this->actingAs(User::factory()->admin()->create());
 
     Livewire::test(CreateProduct::class)
@@ -132,9 +133,11 @@ it('crea un producto sin código ni proveedor habitual', function () {
         ->assertHasNoFormErrors();
 
     $product = Product::where('name', 'Microondas')->firstOrFail();
-    expect($product->sku)->toBeNull()
-        ->and($product->supplier_id)->toBeNull();
+    expect($product->sku)->toBe('PRD-'.str_pad((string) $product->id, 6, '0', STR_PAD_LEFT))
+        ->and($product->supplier_id)->toBeNull()
+        ->and($product->category_id)->toBeNull();
 
-    Product::factory()->create(['sku' => null]);
-    expect(Product::whereNull('sku')->count())->toBe(2);
+    $other = Product::factory()->create(['sku' => null]);
+    expect($other->fresh()->sku)->toBe('PRD-'.str_pad((string) $other->id, 6, '0', STR_PAD_LEFT))
+        ->and(Product::whereNull('sku')->count())->toBe(0);
 });

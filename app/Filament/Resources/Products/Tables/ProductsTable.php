@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Models\Category;
 use App\Models\Supplier;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
@@ -15,11 +16,12 @@ class ProductsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with('supplier'))
+            ->modifyQueryUsing(fn ($query) => $query->with(['supplier', 'category']))
             ->columns([
                 TextColumn::make('sku')->label('Código')->searchable()->sortable(),
                 TextColumn::make('name')->label('Nombre')->searchable()->sortable(),
                 TextColumn::make('brand')->label('Marca')->searchable()->toggleable(),
+                TextColumn::make('category.name')->label('Categoría')->placeholder('—')->toggleable(),
                 TextColumn::make('supplier.name')->label('Proveedor habitual')->placeholder('—')->toggleable(),
                 TextColumn::make('last_cost')->label('Último costo')->money('ARS', locale: 'es_AR')->sortable(),
                 TextColumn::make('freight')->label('Flete')->money('ARS', locale: 'es_AR')->sortable()->toggleable(),
@@ -29,6 +31,8 @@ class ProductsTable
             ->filters([
                 SelectFilter::make('supplier_id')->label('Proveedor habitual')
                     ->options(fn (): array => Supplier::query()->orderBy('name')->pluck('name', 'id')->all()),
+                SelectFilter::make('category_id')->label('Categoría')
+                    ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all()),
                 TernaryFilter::make('active')->label('Activo'),
             ])
             ->recordActions([

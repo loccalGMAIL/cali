@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Category;
 use App\Models\Customer;
 use App\Models\FinancingPlan;
 use App\Models\Payment;
@@ -24,6 +25,7 @@ class ActivityLabels
         Customer::class => 'Cliente',
         Supplier::class => 'Proveedor',
         Product::class => 'Producto',
+        Category::class => 'Categoría',
         FinancingPlan::class => 'Plan de financiación',
         User::class => 'Usuario',
         Sale::class => 'Venta',
@@ -51,6 +53,7 @@ class ActivityLabels
         'brand' => 'Marca',
         'description' => 'Descripción',
         'supplier_id' => 'Proveedor habitual (ID)',
+        'category_id' => 'Categoría (ID)',
         'last_cost' => 'Último costo',
         'freight' => 'Flete',
         'installments_count' => 'Cantidad de cuotas',

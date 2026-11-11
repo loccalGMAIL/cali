@@ -12,6 +12,7 @@ use App\Actions\IssuePurchaseOrder;
 use App\Actions\RegisterPayment;
 use App\Enums\PaymentMethod;
 use App\Enums\UserRole;
+use App\Models\Category;
 use App\Models\Customer;
 use App\Models\FinancingPlan;
 use App\Models\Installment;
@@ -71,6 +72,19 @@ class DemoSeeder extends Seeder
         ['Pava eléctrica 2 L', 'Atma', 'PA-002', 38000, 60, 3],
         ['Aspiradora 1600 W', 'Electrolux', 'AS-160', 120000, 50, 3],
         ['Freidora de aire 4 L', 'Philco', 'FR-004', 95000, 55, 3],
+    ];
+
+    /**
+     * Categoría de cada producto según el prefijo de su código.
+     *
+     * @var array<string, string>
+     */
+    private const CATEGORIES = [
+        'HE' => 'Línea blanca', 'LV' => 'Línea blanca', 'CO' => 'Línea blanca', 'HO' => 'Línea blanca',
+        'AA' => 'Climatización', 'VE' => 'Climatización',
+        'TV' => 'Audio y video',
+        'MI' => 'Pequeños electrodomésticos', 'CA' => 'Pequeños electrodomésticos', 'LI' => 'Pequeños electrodomésticos',
+        'PA' => 'Pequeños electrodomésticos', 'AS' => 'Pequeños electrodomésticos', 'FR' => 'Pequeños electrodomésticos',
     ];
 
     private const SUPPLIERS = [
@@ -142,11 +156,15 @@ class DemoSeeder extends Seeder
      */
     private function products(Collection $suppliers): Collection
     {
+        $categories = collect(self::CATEGORIES)->unique()
+            ->mapWithKeys(fn (string $name): array => [$name => Category::query()->firstOrCreate(['name' => $name])->id]);
+
         return collect(self::CATALOG)->map(fn (array $row): Product => Product::create([
             'sku' => $row[2],
             'name' => $row[0],
             'brand' => $row[1],
             'supplier_id' => $suppliers[$row[5]]->id,
+            'category_id' => $categories[self::CATEGORIES[substr($row[2], 0, 2)]],
             'last_cost' => $row[3],
         ]));
     }

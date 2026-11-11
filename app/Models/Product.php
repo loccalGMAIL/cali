@@ -16,15 +16,50 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * No se maneja stock: todo lo vendido se compra después al proveedor con una orden de compra.
  * El último costo lo fija la factura de compra más reciente y se sugiere al cargar una venta.
  * El flete (opcional, por unidad) también se sugiere al vender y se suma al precio.
+ * Si no se carga un código, se genera uno automático a partir del id (PRD-000123).
  *
  * @property string $last_cost
  * @property string $freight
  */
-#[Fillable(['sku', 'name', 'brand', 'description', 'active', 'supplier_id', 'last_cost', 'freight'])]
+#[Fillable(['sku', 'name', 'brand', 'description', 'active', 'supplier_id', 'category_id', 'last_cost', 'freight'])]
 class Product extends Model implements ActivityLoggable
 {
     /** @use HasFactory<ProductFactory> */
     use HasFactory, LogsActivity;
+
+    public const SKU_PREFIX = 'PRD-';
+
+    protected static function booted(): void
+    {
+        static::saving(function (Product $product): void {
+            if (blank($product->sku)) {
+                $product->sku = null;
+            }
+        });
+
+        static::saved(function (Product $product): void {
+            if ($product->sku === null) {
+                $product->sku = static::generateSku($product->getKey());
+                $product->saveQuietly();
+            }
+        });
+    }
+
+    /**
+     * Código automático a partir del id; si alguien ya lo cargó a mano, se le agrega un sufijo.
+     */
+    public static function generateSku(int $id): string
+    {
+        $sku = self::SKU_PREFIX.str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+        $candidate = $sku;
+        $suffix = 2;
+
+        while (static::query()->where('sku', $candidate)->exists()) {
+            $candidate = $sku.'-'.$suffix++;
+        }
+
+        return $candidate;
+    }
 
     /**
      * @return array<string, string>
@@ -46,6 +81,16 @@ class Product extends Model implements ActivityLoggable
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    /**
+     * Categoría opcional del producto.
+     *
+     * @return BelongsTo<Category, $this>
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     /**
