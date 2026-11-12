@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Purchases\Schemas;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
+use App\Models\PurchaseOrder;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -21,7 +22,7 @@ class PurchaseInfolist
                     ->columnSpanFull()
                     ->schema([
                         TextEntry::make('supplier.name')->label('Proveedor'),
-                        TextEntry::make('purchase_order_id')->label('Orden de compra')->prefix('#')
+                        TextEntry::make('purchase_order_id')->label('Orden de compra')->formatStateUsing(fn ($state): string => PurchaseOrder::numberFor($state))
                             ->url(fn (Purchase $record): string => PurchaseOrderResource::getUrl('view', ['record' => $record->purchase_order_id])),
                         TextEntry::make('invoice_number')->label('Número de factura'),
                         TextEntry::make('date')->label('Fecha')->date('d/m/Y'),

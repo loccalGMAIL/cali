@@ -65,7 +65,7 @@ class PaymentsReport implements Report
             ->whereDate('date', '<=', $filters['to'])
             ->when($filters['method'] !== null, fn (Builder $query) => $query->where('method', $filters['method']))
             ->when($filters['collected_by'] !== null, fn (Builder $query) => $query->where('collected_by', $filters['collected_by']))
-            ->with(['customer:id,name', 'collector:id,name'])
+            ->with(['customer:id,name', 'collector:id,name', 'installments.sale.items.product', 'sale.items.product'])
             ->orderBy('date')
             ->orderBy('id')
             ->get();

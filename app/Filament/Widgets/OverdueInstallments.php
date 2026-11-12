@@ -6,6 +6,7 @@ use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Payments\PaymentResource;
 use App\Models\Installment;
+use App\Models\Sale;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -35,7 +36,7 @@ class OverdueInstallments extends TableWidget
             ->columns([
                 TextColumn::make('customer.name')->label('Cliente')->searchable()
                     ->url(fn (Installment $record): string => CustomerResource::getUrl('view', ['record' => $record->customer_id])),
-                TextColumn::make('sale_id')->label('Venta')->prefix('#'),
+                TextColumn::make('sale_id')->label('Venta')->formatStateUsing(fn ($state): string => Sale::numberFor($state)),
                 TextColumn::make('number')->label('Cuota'),
                 TextColumn::make('due_date')->label('Vencimiento')->date('d/m/Y')->sortable(),
                 TextColumn::make('days_late')->label('Días de atraso')

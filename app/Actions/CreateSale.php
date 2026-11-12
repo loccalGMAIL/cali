@@ -129,7 +129,7 @@ class CreateSale
             $this->accounts->record(
                 $customer,
                 AccountMovementType::Sale,
-                "Venta #{$sale->getKey()}",
+                "Venta {$sale->number()}",
                 debit: $result['total'],
                 reference: $sale,
                 user: $user,
@@ -142,7 +142,7 @@ class CreateSale
 
             $this->activity->log(
                 ActivityEvent::Created,
-                "Registró la venta #{$sale->getKey()} a {$customer->name} por ".Money::format($sale->total)." en {$sale->installments_count} cuota".($sale->installments_count === 1 ? '' : 's'),
+                "Registró la venta {$sale->number()} a {$customer->name} por ".Money::format($sale->total)." en {$sale->installments_count} cuota".($sale->installments_count === 1 ? '' : 's'),
                 $sale,
                 [
                     'total' => $sale->total,
@@ -202,13 +202,13 @@ class CreateSale
             'amount' => $amount,
             'method' => $method instanceof PaymentMethod ? $method : PaymentMethod::from((string) $method),
             'collected_by' => $user->getKey(),
-            'notes' => "Anticipo de la venta #{$sale->getKey()}",
+            'notes' => "Anticipo de la venta {$sale->number()}",
         ]);
 
         $this->accounts->record(
             $customer,
             AccountMovementType::Payment,
-            "Anticipo venta #{$sale->getKey()}",
+            "Anticipo venta {$sale->number()}",
             credit: $amount,
             reference: $payment,
             user: $user,

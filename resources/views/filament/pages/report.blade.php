@@ -1,7 +1,11 @@
 <x-filament-panels::page>
     {{ $this->form }}
 
-    <div class="cali-report-card">
-        @include($partial, ['report' => $report, 'filters' => $filters, 'screen' => true])
-    </div>
+    {{ $this->table }}
+
+    @if (view()->exists($summary))
+        <div class="cali-report-card">
+            @include($summary, ['report' => $report, 'filters' => $filters])
+        </div>
+    @endif
 </x-filament-panels::page>

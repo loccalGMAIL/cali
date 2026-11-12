@@ -21,7 +21,7 @@ class PurchaseOrderInfolist
                     ->columns(4)
                     ->columnSpanFull()
                     ->schema([
-                        TextEntry::make('id')->label('Número')->prefix('#'),
+                        TextEntry::make('id')->label('Número')->formatStateUsing(fn ($state): string => PurchaseOrder::numberFor($state)),
                         TextEntry::make('supplier.name')->label('Proveedor'),
                         TextEntry::make('date')->label('Fecha')->date('d/m/Y'),
                         TextEntry::make('status')->label('Estado')->badge(),
@@ -68,7 +68,7 @@ class PurchaseOrderInfolist
                             ->schema([
                                 TextEntry::make('product.name')->label('Producto'),
                                 TextEntry::make('sale')->label('Venta')
-                                    ->state(fn (PurchaseOrderItem $record): string => "#{$record->saleItem->sale_id} · {$record->saleItem->sale->customer->name}".($record->saleItem->sale->isCancelled() ? ' (anulada)' : ''))
+                                    ->state(fn (PurchaseOrderItem $record): string => "{$record->saleItem->sale->number()} · {$record->saleItem->sale->customer->name}".($record->saleItem->sale->isCancelled() ? ' (anulada)' : ''))
                                     ->color(fn (PurchaseOrderItem $record): ?string => $record->saleItem->sale->isCancelled() ? 'danger' : null)
                                     ->url(fn (PurchaseOrderItem $record): string => SaleResource::getUrl('view', ['record' => $record->saleItem->sale_id])),
                                 TextEntry::make('quantity')->label('Cantidad'),

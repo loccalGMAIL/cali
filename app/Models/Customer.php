@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 
 #[Fillable(['name', 'document_number', 'phone', 'email', 'address', 'city', 'notes', 'active'])]
@@ -31,6 +32,16 @@ class Customer extends Model implements ActivityLoggable
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
+    }
+
+    /**
+     * Productos vendidos al cliente, a través de sus ventas.
+     *
+     * @return HasManyThrough<SaleItem, Sale, $this>
+     */
+    public function saleItems(): HasManyThrough
+    {
+        return $this->hasManyThrough(SaleItem::class, Sale::class);
     }
 
     /**

@@ -108,7 +108,7 @@ it('anula el anticipo junto con la venta y deja la cuenta en cero', function () 
     $balance = AccountMovement::where('customer_id', $this->customer->id)->latest('id')->value('balance');
 
     expect($downPayment->isCancelled())->toBeTrue()
-        ->and($downPayment->cancellation_reason)->toContain("venta #{$sale->id}")
+        ->and($downPayment->cancellation_reason)->toContain("venta {$sale->number()}")
         ->and(Payment::notCancelled()->count())->toBe(0)
         ->and($balance)->toBe('0.00');
 });
@@ -118,7 +118,7 @@ it('rechaza anular una venta con cobros imputados y avisa cuáles anular', funct
     $payment = app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 400], $this->admin);
 
     expect(fn () => app(CancelSale::class)->handle($sale, 'Error', $this->admin))
-        ->toThrow(ValidationException::class, "#{$payment->id}");
+        ->toThrow(ValidationException::class, $payment->number());
 
     expect($sale->fresh()->status)->toBe(SaleStatus::Active)
         ->and($sale->items->first()->fresh()->pending_quantity)->toBe(1)
@@ -167,5 +167,5 @@ it('el anticipo ya no se puede anular por separado y el aviso indica la venta', 
     $sale = ($this->sell)(down: 300);
 
     expect(fn () => app(CancelPayment::class)->handle(Payment::firstOrFail(), 'Error', $this->admin))
-        ->toThrow(ValidationException::class, "venta #{$sale->id}");
+        ->toThrow(ValidationException::class, "venta {$sale->number()}");
 });

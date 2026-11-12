@@ -62,7 +62,7 @@ class SaleResource extends Resource
 
     public static function getRecordTitle(?Model $record): ?string
     {
-        return $record ? "Venta #{$record->getKey()}" : null;
+        return $record ? $record->number() : null;
     }
 
     public static function getRelations(): array

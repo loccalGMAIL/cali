@@ -95,7 +95,7 @@ class CreatePurchase
 
             $this->activity->log(
                 ActivityEvent::Created,
-                "Registró la compra #{$purchase->getKey()} de {$purchase->supplier->name} por ".Money::format($total)." (orden #{$order->getKey()})",
+                "Registró la compra #{$purchase->getKey()} de {$purchase->supplier->name} por ".Money::format($total)." (orden {$order->number()})",
                 $purchase,
                 ['invoice_number' => $purchase->invoice_number, 'total' => $total, 'items' => $orderItems->count()],
                 $user,

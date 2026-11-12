@@ -48,7 +48,7 @@ class PaymentResource extends Resource
 
     public static function getRecordTitle(?Model $record): ?string
     {
-        return $record ? "Cobro #{$record->getKey()}" : null;
+        return $record ? $record->number() : null;
     }
 
     public static function getRelations(): array

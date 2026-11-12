@@ -139,7 +139,7 @@ it('la versión imprimible lista los productos agrupados y no muestra costos', f
 
     $this->get(route('filament.admin.purchase-orders.print', $order))
         ->assertOk()
-        ->assertSee("Orden de compra #{$order->id}")
+        ->assertSee("Orden de compra {$order->number()}")
         ->assertSee('Distribuidora Sur')
         ->assertSee('HE-360')
         ->assertSee('Heladera 360')

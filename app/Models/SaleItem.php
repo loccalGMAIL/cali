@@ -62,7 +62,7 @@ class SaleItem extends Model
     {
         $this->loadMissing(['product', 'sale.customer']);
 
-        return "{$this->product->name} — Venta #{$this->sale_id}, {$this->sale->customer->name}";
+        return "{$this->product->name} — Venta {$this->sale->number()}, {$this->sale->customer->name}";
     }
 
     /**

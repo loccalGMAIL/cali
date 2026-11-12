@@ -34,7 +34,7 @@
                 </tr>
                 @foreach ($group['lines'] as $line)
                     <tr>
-                        <td>#{{ $line['installment']->sale_id }}</td>
+                        <td>{{ \App\Models\Sale::numberFor($line['installment']->sale_id) }}</td>
                         <td>{{ $line['installment']->number }}/{{ $line['installment']->sale->installments_count }}</td>
                         <td @class(['cali-report-danger' => $line['days_late'] > 0])>{{ $line['installment']->due_date->format('d/m/Y') }}</td>
                         <td @class(['number', 'cali-report-danger' => $line['days_late'] > 0])>{{ $line['days_late'] > 0 ? $line['days_late'] : '–' }}</td>

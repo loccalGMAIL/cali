@@ -55,7 +55,7 @@ class PendingPurchaseService
 
                 if ($saleItem->sale->isCancelled()) {
                     throw ValidationException::withMessages([
-                        'items' => "La venta #{$saleItem->sale_id} está anulada: quitá «{$saleItem->product->name}» de la orden.",
+                        'items' => "La venta {$saleItem->sale->number()} está anulada: quitá «{$saleItem->product->name}» de la orden.",
                     ]);
                 }
 
@@ -65,7 +65,7 @@ class PendingPurchaseService
 
                 if ($quantity > $saleItem->pending_quantity) {
                     throw ValidationException::withMessages([
-                        'items' => "«{$saleItem->product->name}» (venta #{$saleItem->sale_id}): quedan {$saleItem->pending_quantity} pendientes y se piden {$quantity}.",
+                        'items' => "«{$saleItem->product->name}» (venta {$saleItem->sale->number()}): quedan {$saleItem->pending_quantity} pendientes y se piden {$quantity}.",
                     ]);
                 }
 
@@ -145,7 +145,7 @@ class PendingPurchaseService
             if ($missing > 0 && ! $saleItem->sale->isCancelled()) {
                 if ($saleItem->pending_quantity < $missing) {
                     throw ValidationException::withMessages([
-                        'purchase' => "Lo que faltó de «{$orderItem->product->name}» (venta #{$saleItem->sale_id}) ya se incluyó en otra orden de compra. Anulá o editá primero esa orden.",
+                        'purchase' => "Lo que faltó de «{$orderItem->product->name}» (venta {$saleItem->sale->number()}) ya se incluyó en otra orden de compra. Anulá o editá primero esa orden.",
                     ]);
                 }
 

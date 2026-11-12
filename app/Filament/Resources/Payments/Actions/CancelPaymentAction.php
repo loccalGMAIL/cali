@@ -11,7 +11,7 @@ class CancelPaymentAction extends CancelRecordAction
 {
     protected function modalTitle(Model $record): string
     {
-        return "Anular el cobro #{$record->getKey()}";
+        return "Anular el cobro {$record->number()}";
     }
 
     protected function modalExplanation(): string

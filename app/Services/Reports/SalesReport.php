@@ -114,7 +114,7 @@ class SalesReport implements Report
                 $profit = $this->saleProfit($sale);
 
                 return [
-                    'label' => "Venta #{$sale->getKey()}",
+                    'label' => $sale->number(),
                     'sale' => $sale,
                     'quantity' => 1,
                     'total' => $sale->total,

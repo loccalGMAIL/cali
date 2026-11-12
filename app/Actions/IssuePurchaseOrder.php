@@ -35,7 +35,7 @@ class IssuePurchaseOrder
 
             $this->activity->log(
                 ActivityEvent::Updated,
-                "Emitió la orden de compra #{$locked->getKey()} a {$locked->supplier->name}",
+                "Emitió la orden de compra {$locked->number()} a {$locked->supplier->name}",
                 $locked,
                 [],
                 $user,

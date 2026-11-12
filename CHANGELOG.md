@@ -13,6 +13,29 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.7.0] - 2026-11-12
+
+No requiere migración.
+
+### Agregado
+- Los **informes** se ven en pantalla como tablas del panel: se pueden ordenar, buscar, paginar y
+  ocultar columnas (la elección queda guardada por usuario). Los totales y resúmenes quedan debajo
+  de la tabla. La versión imprimible no cambia.
+- **Cobros realizados**: columnas **Producto** y **Cuota** (`2/7`, cuota 2 de 7; varias cuotas van
+  separadas por coma y un anticipo muestra un guion), también en la impresión.
+- Columna **Producto** en el listado de Cobros y en la imputación del detalle de cada cobro.
+- En la ficha del cliente, el detalle de **Cuotas** muestra el producto y hay una pestaña nueva
+  **Productos comprados** con la venta, lo pagado, el saldo y cada pago.
+
+### Cambiado
+- **Numeración visible**: ventas `V-00001`, cobros `C-00001` y órdenes de compra `OC-00001`, en
+  tablas, fichas, informes, impresión y movimientos. El id interno no cambia; los registros de
+  actividad anteriores conservan el formato viejo.
+- Los **botones con ícono** muestran solo el ícono y el texto como tooltip en todo el panel. Los
+  que no tienen ícono (guardar, cancelar, confirmar) conservan el texto.
+- **Cobranza del mes** en pantalla lista una fila por cuota con el cliente en cada fila; los
+  subtotales por cliente quedan en la versión imprimible.
+
 ## [0.6.1] - 2026-11-12
 
 Requiere migración (`php artisan migrate`): crea la tabla `table_column_preferences`.
@@ -219,7 +242,8 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.6.1...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/loccalGMAIL/cali/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/loccalGMAIL/cali/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/loccalGMAIL/cali/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/loccalGMAIL/cali/compare/v0.4.0...v0.5.0

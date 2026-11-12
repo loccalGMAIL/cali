@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * @property SaleStatus $status
@@ -47,6 +49,19 @@ class Sale extends Model
             'status' => SaleStatus::class,
             'cancelled_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Número con el que se identifica la venta: `V-00012`.
+     */
+    public static function numberFor(int|string|null $id): string
+    {
+        return $id === null ? '—' : 'V-'.str_pad((string) $id, 5, '0', STR_PAD_LEFT);
+    }
+
+    public function number(): string
+    {
+        return static::numberFor($this->getKey());
     }
 
     public function isCancelled(): bool
@@ -104,6 +119,64 @@ class Sale extends Model
     public function items(): HasMany
     {
         return $this->hasMany(SaleItem::class);
+    }
+
+    /**
+     * Cobros del anticipo (los que se hicieron al vender, sin imputar a cuotas).
+     *
+     * @return HasMany<Payment, $this>
+     */
+    public function downPayments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Cobros vigentes de la venta, del más viejo al más nuevo: el anticipo y lo imputado a cada
+     * cuota. Necesita `downPayments` e `installments.payments` cargados.
+     *
+     * @return Collection<int, array{date: Carbon, amount: string, concept: string}>
+     */
+    public function paymentLines(): Collection
+    {
+        $lines = collect();
+
+        foreach ($this->downPayments as $payment) {
+            if (! $payment->isCancelled()) {
+                $lines->push(['date' => $payment->date, 'amount' => $payment->amount, 'concept' => 'Anticipo']);
+            }
+        }
+
+        foreach ($this->installments as $installment) {
+            foreach ($installment->payments as $payment) {
+                if (! $payment->isCancelled()) {
+                    $lines->push([
+                        'date' => $payment->date,
+                        'amount' => $payment->pivot->amount,
+                        'concept' => "Cuota {$installment->number}/{$this->installments_count}",
+                    ]);
+                }
+            }
+        }
+
+        return $lines->sortBy(fn (array $line): string => $line['date']->toDateString())->values();
+    }
+
+    public function paidAmount(): string
+    {
+        return $this->paymentLines()->reduce(fn (string $total, array $line): string => bcadd($total, $line['amount'], 2), '0.00');
+    }
+
+    /**
+     * Lo que falta cobrar: el saldo de las cuotas (una venta anulada no debe nada).
+     */
+    public function balanceAmount(): string
+    {
+        if ($this->isCancelled()) {
+            return '0.00';
+        }
+
+        return $this->installments->reduce(fn (string $total, Installment $installment): string => bcadd($total, $installment->balance(), 2), '0.00');
     }
 
     /**

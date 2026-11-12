@@ -17,11 +17,13 @@ class PaymentsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['customer', 'collector']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['customer', 'collector', 'sale.items.product', 'installments.sale.items.product']))
             ->columns([
                 TextColumn::make('id')->label('N°')->sortable(),
                 TextColumn::make('date')->label('Fecha')->date('d/m/Y')->sortable(),
                 TextColumn::make('customer.name')->label('Cliente')->searchable(),
+                TextColumn::make('products')->label('Producto')
+                    ->state(fn (Payment $record): string => $record->productsLabel()),
                 TextColumn::make('amount')->label('Monto')->money('ARS', locale: 'es_AR')->sortable()
                     ->color(fn (Payment $record): ?string => $record->isCancelled() ? 'gray' : null)
                     ->extraAttributes(fn (Payment $record): array => $record->isCancelled() ? ['style' => 'text-decoration: line-through'] : []),

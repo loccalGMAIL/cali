@@ -48,7 +48,7 @@ class CreatePurchaseOrder
 
             $this->activity->log(
                 ActivityEvent::Created,
-                "Armó la orden de compra #{$order->getKey()} a {$supplier->name} con {$units} unidad".($units === 1 ? '' : 'es'),
+                "Armó la orden de compra {$order->number()} a {$supplier->name} con {$units} unidad".($units === 1 ? '' : 'es'),
                 $order,
                 ['items' => $order->items()->count()],
                 $user,

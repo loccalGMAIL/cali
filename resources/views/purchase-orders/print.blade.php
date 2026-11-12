@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Orden de compra #{{ $order->id }} · {{ $order->supplier->name }}</title>
+    <title>Orden de compra {{ $order->number() }} · {{ $order->supplier->name }}</title>
     <style>
         :root { color-scheme: light; }
         * { box-sizing: border-box; }
@@ -32,7 +32,7 @@
 
     <header>
         <div>
-            <h1>Orden de compra #{{ $order->id }}</h1>
+            <h1>Orden de compra {{ $order->number() }}</h1>
             <div class="muted">{{ config('app.name') }}</div>
         </div>
         <div class="muted">{{ $order->date->format('d/m/Y') }}</div>

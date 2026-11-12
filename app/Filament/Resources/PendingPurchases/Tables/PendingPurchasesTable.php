@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PendingPurchases\Tables;
 use App\Actions\CreatePurchaseOrder;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use App\Filament\Resources\Sales\SaleResource;
+use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Supplier;
 use Filament\Actions\BulkAction;
@@ -29,7 +30,7 @@ class PendingPurchasesTable
                 TextColumn::make('product.supplier.name')->label('Proveedor habitual')->placeholder('—'),
                 TextColumn::make('pending_quantity')->label('Pendiente')->numeric()->weight('bold'),
                 TextColumn::make('unit_cost')->label('Costo unitario')->money('ARS', locale: 'es_AR'),
-                TextColumn::make('sale_id')->label('Venta')->prefix('#')->sortable()
+                TextColumn::make('sale_id')->label('Venta')->formatStateUsing(fn ($state): string => Sale::numberFor($state))->sortable()
                     ->url(fn (SaleItem $record): string => SaleResource::getUrl('view', ['record' => $record->sale_id])),
                 TextColumn::make('sale.customer.name')->label('Cliente')->searchable(),
                 TextColumn::make('sale.date')->label('Fecha de venta')->date('d/m/Y'),
@@ -70,7 +71,7 @@ class PendingPurchasesTable
                             return;
                         }
 
-                        Notification::make()->success()->title("Orden de compra #{$order->getKey()} armada")->send();
+                        Notification::make()->success()->title("Orden de compra {$order->number()} armada")->send();
 
                         redirect(PurchaseOrderResource::getUrl('view', ['record' => $order]));
                     }),

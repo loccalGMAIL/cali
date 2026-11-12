@@ -115,7 +115,7 @@ class RegisterPayment
             $this->accounts->record(
                 $customer,
                 AccountMovementType::Payment,
-                "Cobro #{$payment->getKey()}",
+                "Cobro {$payment->number()}",
                 credit: $amount,
                 reference: $payment,
                 user: $user,
@@ -124,7 +124,7 @@ class RegisterPayment
 
             $this->activity->log(
                 ActivityEvent::Created,
-                "Registró el cobro #{$payment->getKey()} de ".Money::format($amount)." a {$customer->name}",
+                "Registró el cobro {$payment->number()} de ".Money::format($amount)." a {$customer->name}",
                 $payment,
                 ['amount' => $amount, 'method' => $payment->method->value, 'installments' => count($allocations), 'chosen_installments' => $selected !== []],
                 $user,

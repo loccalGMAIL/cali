@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PurchaseOrders\Tables;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Filament\Resources\PurchaseOrders\Actions\CancelPurchaseOrderAction;
+use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -18,7 +19,7 @@ class PurchaseOrdersTable
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('supplier')->withSum('items', 'quantity'))
             ->columns([
-                TextColumn::make('id')->label('N°')->prefix('#')->sortable(),
+                TextColumn::make('id')->label('N°')->formatStateUsing(fn ($state): string => PurchaseOrder::numberFor($state))->sortable(),
                 TextColumn::make('date')->label('Fecha')->date('d/m/Y')->sortable(),
                 TextColumn::make('supplier.name')->label('Proveedor')->searchable(),
                 TextColumn::make('items_sum_quantity')->label('Unidades')->numeric(),

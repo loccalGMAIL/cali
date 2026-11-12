@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Payments\Schemas;
 
 use App\Models\Payment;
+use App\Models\Sale;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -37,10 +38,11 @@ class PaymentInfolist
                 Section::make('Imputación')
                     ->columnSpanFull()
                     ->schema([
-                        RepeatableEntry::make('installments')->label('')->columns(4)
+                        RepeatableEntry::make('installments')->label('')->columns(5)
                             ->placeholder('Este cobro no se imputó a cuotas (por ejemplo, un anticipo).')
                             ->schema([
-                                TextEntry::make('sale_id')->label('Venta')->prefix('#'),
+                                TextEntry::make('sale_id')->label('Venta')->formatStateUsing(fn ($state): string => Sale::numberFor($state)),
+                                TextEntry::make('sale.items.product.name')->label('Producto')->listWithLineBreaks(),
                                 TextEntry::make('number')->label('Cuota'),
                                 TextEntry::make('due_date')->label('Vence')->date('d/m/Y'),
                                 TextEntry::make('pivot.amount')->label('Monto imputado')->money('ARS', locale: 'es_AR'),
