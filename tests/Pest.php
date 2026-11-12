@@ -9,6 +9,7 @@ use App\Models\FinancingPlan;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseOrder;
+use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Supplier;
 use App\Models\User;
@@ -67,4 +68,26 @@ function receivedPurchase(User $user, Supplier $supplier, Product $product, int 
         'date' => $date ?? today()->toDateString(),
         'invoice_number' => $invoice,
     ], [['product_id' => $product->id, 'quantity' => $quantity, 'unit_cost' => $unitCost]], $user);
+}
+
+/**
+ * Venta para los informes: un producto de costo 600 + margen 600 (más flete, si se indica),
+ * en 3 cuotas que vencen el día 30 a partir del mes de $firstDue.
+ */
+function reportSale(Customer $customer, User $seller, string $firstDue, string $date = '2026-11-01', int $quantity = 1, float $freight = 0, float $downPayment = 0, ?Product $product = null): Sale
+{
+    return app(CreateSale::class)->handle([
+        'customer_id' => $customer->id,
+        'seller_id' => $seller->id,
+        'financing_plan_id' => FinancingPlan::factory()->create(['installments_count' => 3])->id,
+        'date' => $date,
+        'first_due_date' => $firstDue,
+        'down_payment' => $downPayment,
+    ], [[
+        'product_id' => ($product ?? Product::factory()->create())->id,
+        'quantity' => $quantity,
+        'unit_cost' => 600,
+        'unit_margin' => 600,
+        'unit_freight' => $freight,
+    ]], $seller);
 }

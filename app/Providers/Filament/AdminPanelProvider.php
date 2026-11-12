@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
 use App\Http\Controllers\PrintPurchaseOrderController;
+use App\Http\Controllers\PrintReportController;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -40,6 +41,7 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make('Ventas'),
                 NavigationGroup::make('Compras'),
+                NavigationGroup::make('Informes'),
                 NavigationGroup::make('Configuración'),
             ])
             ->login()
@@ -70,6 +72,8 @@ class AdminPanelProvider extends PanelProvider
             ->authenticatedRoutes(function (): void {
                 Route::get('purchase-orders/{purchaseOrder}/print', PrintPurchaseOrderController::class)
                     ->name('purchase-orders.print');
+                Route::get('reports/{report}/print', PrintReportController::class)
+                    ->name('reports.print');
             });
     }
 }

@@ -13,6 +13,25 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.6.0] - 2026-11-12
+
+No requiere migración.
+
+### Agregado
+- Grupo **Informes** en el menú, solo para administradores. Cada informe se consulta en pantalla
+  con filtros y tiene un botón **Imprimir** que abre la versión imprimible (o para guardar como
+  PDF desde el navegador) con los mismos filtros.
+- **Cuotas pendientes por cliente**: grilla como la del Excel, una fila por cliente con deuda y
+  columnas Vencido, una por mes (6, 12, 18 o 24 meses), "Más adelante" y Total. Lo que ya venció va
+  a Vencido aunque sea del mes en curso. Filtros por localidad y por clientes con cuotas vencidas.
+- **Cobranza del mes**: lista para salir a cobrar, con las cuotas que vencen en el mes elegido
+  agrupadas por cliente (teléfono, dirección, días de atraso y saldo); opcionalmente suma las
+  atrasadas de meses anteriores. Filtro por localidad.
+- **Cobros realizados**: cobros de un período (con anticipos, sin anulados), con subtotales por
+  medio de pago y por quien cobró. Filtros por fechas, medio de pago y cobrador.
+- **Ventas y ganancia**: ventas de un período (sin anuladas) con total, costo, flete, ganancia y
+  margen, en detalle o agrupadas por vendedor o por producto. Filtros por fechas y vendedor.
+
 ## [0.5.0] - 2026-11-12
 
 No requiere migración. Las ventas y cuotas ya creadas no cambian.
@@ -187,7 +206,8 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.5.0...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/loccalGMAIL/cali/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/loccalGMAIL/cali/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/loccalGMAIL/cali/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/loccalGMAIL/cali/compare/v0.2.0...v0.3.0
