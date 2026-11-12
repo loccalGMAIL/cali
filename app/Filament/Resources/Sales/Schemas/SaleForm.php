@@ -90,8 +90,10 @@ class SaleForm
                         Select::make('financing_plan_id')->label('Plan de financiación')
                             ->options(fn (): array => FinancingPlan::query()->active()->pluck('name', 'id')->all())
                             ->required()->live(),
-                        DatePicker::make('first_due_date')->label('Fecha de la primera cuota')
-                            ->default(now()->addMonth())->required()->live(),
+                        Select::make('first_due_date')->label('Vencimiento de la primera cuota')
+                            ->options(fn (): array => self::firstDueDateOptions())
+                            ->default(SaleCalculator::dueDateFor(today(), 1)->toDateString())
+                            ->required()->live(),
                         TextInput::make('down_payment')->label('Anticipo')->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true)
                             ->dehydrateStateUsing(fn ($state) => $state === null || $state === '' ? 0 : $state),
                         Select::make('down_payment_method')->label('Medio de pago del anticipo')
@@ -122,6 +124,23 @@ class SaleForm
     /**
      * El vendedor carga a su nombre; el resto arranca con el vendedor por defecto (o con quien carga).
      */
+    /**
+     * Vencimientos posibles para la primera cuota: el día 30 de cada uno de los próximos 24 meses.
+     *
+     * @return array<string, string>
+     */
+    private static function firstDueDateOptions(): array
+    {
+        $options = [];
+
+        for ($offset = 0; $offset < 24; $offset++) {
+            $dueDate = SaleCalculator::dueDateFor(today(), $offset);
+            $options[$dueDate->toDateString()] = $dueDate->format('d/m/Y').' ('.ucfirst($dueDate->locale('es')->translatedFormat('F Y')).')';
+        }
+
+        return $options;
+    }
+
     private static function defaultSellerId(): ?int
     {
         $user = auth()->user();

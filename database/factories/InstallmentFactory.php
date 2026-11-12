@@ -6,6 +6,7 @@ use App\Enums\InstallmentStatus;
 use App\Models\Customer;
 use App\Models\Installment;
 use App\Models\Sale;
+use App\Services\SaleCalculator;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -22,7 +23,7 @@ class InstallmentFactory extends Factory
             'sale_id' => Sale::factory(),
             'customer_id' => Customer::factory(),
             'number' => 1,
-            'due_date' => today()->addMonth()->toDateString(),
+            'due_date' => SaleCalculator::dueDateFor(today(), 1)->toDateString(),
             'amount' => 1000,
             'paid_amount' => 0,
             'cost_portion' => 600,

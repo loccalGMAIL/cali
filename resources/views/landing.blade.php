@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#f6f5f0">
     <meta name="description" content="Dale lugar a eso que querés. Conocé Cali: electrodomésticos para la cocina, el lavado y los pequeños momentos de tu hogar.">
     <title>Cali — Electrodomésticos para tu hogar</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="landing">

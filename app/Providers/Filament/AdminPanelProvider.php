@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandLogo(fn (): View => view('filament.admin.logo'))
+            ->favicon(asset('favicon.svg'))
             ->brandLogoHeight(fn (): string => auth()->guest() ? '3.25rem' : '2rem')
             ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn (): View => view('filament.admin.version', ['isLogin' => true]))
             ->renderHook(PanelsRenderHook::USER_MENU_BEFORE, fn (): View => view('filament.admin.version'))

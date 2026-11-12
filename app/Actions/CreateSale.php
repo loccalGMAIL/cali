@@ -94,7 +94,7 @@ class CreateSale
                 'total_freight' => $result['total_freight'],
                 'down_payment' => $result['down_payment'],
                 'financed_amount' => $result['financed_amount'],
-                'first_due_date' => $data['first_due_date'],
+                'first_due_date' => SaleCalculator::dueDateFor($data['first_due_date'])->toDateString(),
                 'status' => $result['installments'] === [] ? SaleStatus::Paid : SaleStatus::Active,
                 'notes' => $data['notes'] ?? null,
             ]);

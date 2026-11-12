@@ -112,12 +112,20 @@ it('calcula la porción de costo proporcional a cada cuota', function () {
         ->and($result['installments'][2]['cost_portion'])->toBe('165.51');
 });
 
-it('vence cada cuota un mes después sin desbordar el fin de mes', function () {
-    $result = calc([line(1, 900, 500)], 0, 3, '2026-01-31');
+it('vence todas las cuotas el día 30 (último día en febrero)', function () {
+    $result = calc([line(1, 900, 500)], 0, 3, '2026-01-07');
 
     $dates = array_map(fn ($i) => $i['due_date']->toDateString(), $result['installments']);
 
-    expect($dates)->toBe(['2026-01-31', '2026-02-28', '2026-03-31']);
+    expect($dates)->toBe(['2026-01-30', '2026-02-28', '2026-03-30']);
+});
+
+it('en febrero de año bisiesto vence el 29 y al cruzar de año sigue el día 30', function () {
+    $leap = calc([line(1, 900, 500)], 0, 2, '2028-01-15');
+    $crossing = calc([line(1, 900, 500)], 0, 2, '2026-12-01');
+
+    expect(array_map(fn ($i) => $i['due_date']->toDateString(), $leap['installments']))->toBe(['2028-01-30', '2028-02-29'])
+        ->and(array_map(fn ($i) => $i['due_date']->toDateString(), $crossing['installments']))->toBe(['2026-12-30', '2027-01-30']);
 });
 
 it('un plan de una cuota equivale a contado', function () {

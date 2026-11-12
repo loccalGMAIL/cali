@@ -48,7 +48,7 @@ class SalePreview
                 $lines,
                 self::number($downPayment),
                 $plan->installments_count,
-                filled($firstDueDate) ? $firstDueDate : today()->addMonth(),
+                filled($firstDueDate) ? $firstDueDate : SaleCalculator::dueDateFor(today(), 1),
             );
         } catch (InvalidArgumentException $exception) {
             return new HtmlString('<span class="text-sm" style="color: var(--danger-600, #dc2626)">'.e($exception->getMessage()).'</span>');
