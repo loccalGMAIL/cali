@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 
 /**
  * @property PaymentMethod $method
@@ -35,6 +36,19 @@ class Payment extends Model
         ];
     }
 
+    /**
+     * Número con el que se identifica el cobro: `C-00012`.
+     */
+    public static function numberFor(int|string|null $id): string
+    {
+        return $id === null ? '—' : 'C-'.str_pad((string) $id, 5, '0', STR_PAD_LEFT);
+    }
+
+    public function number(): string
+    {
+        return static::numberFor($this->getKey());
+    }
+
     public function isCancelled(): bool
     {
         return $this->cancelled_at !== null;
@@ -47,6 +61,34 @@ class Payment extends Model
     public function isDownPayment(): bool
     {
         return $this->sale_id !== null;
+    }
+
+    /**
+     * Cuotas a las que se imputó, como `2/7` (cuota 2 de 7); varias van separadas por coma y un
+     * anticipo, que no se imputa a cuotas, queda con un guion. Necesita `installments.sale` cargado.
+     */
+    public function installmentsLabel(): string
+    {
+        return $this->installments
+            ->sortBy([['sale_id', 'asc'], ['number', 'asc']])
+            ->map(fn (Installment $installment): string => "{$installment->number}/{$installment->sale->installments_count}")
+            ->implode(', ') ?: '—';
+    }
+
+    /**
+     * Productos de lo que se cobró: los de la venta del anticipo o los de las ventas a cuyas cuotas
+     * se imputó. Necesita `sale.items.product` e `installments.sale.items.product` cargados.
+     */
+    public function productsLabel(): string
+    {
+        $sales = $this->isDownPayment()
+            ? collect([$this->sale])
+            : $this->installments->map(fn (Installment $installment): ?Sale => $installment->sale)->unique('id');
+
+        return $sales->filter()
+            ->flatMap(fn (Sale $sale): Collection => $sale->items->map(fn (SaleItem $item): string => $item->product->name ?? '—'))
+            ->unique()
+            ->implode(', ') ?: '—';
     }
 
     /**

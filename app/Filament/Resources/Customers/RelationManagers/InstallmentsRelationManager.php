@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Customers\RelationManagers;
 use App\Enums\InstallmentStatus;
 use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use App\Models\Installment;
+use App\Models\Sale;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -33,8 +34,11 @@ class InstallmentsRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('number')
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('sale.items.product'))
             ->columns([
-                TextColumn::make('sale_id')->label('Venta')->prefix('#')->sortable(),
+                TextColumn::make('sale_id')->label('Venta')->formatStateUsing(fn ($state): string => Sale::numberFor($state))->sortable(),
+                TextColumn::make('sale.items.product.name')->label('Producto')
+                    ->listWithLineBreaks()->limitList(2)->expandableLimitedList(),
                 TextColumn::make('number')->label('Cuota')->sortable(),
                 TextColumn::make('due_date')->label('Vencimiento')->date('d/m/Y')->sortable()
                     ->color(fn (Installment $record): ?string => $record->isOverdue() ? 'danger' : null)

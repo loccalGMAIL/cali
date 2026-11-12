@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Installment;
+use App\Models\Sale;
 use App\Services\PaymentAllocator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\HtmlString;
@@ -55,7 +56,7 @@ class PaymentPreview
     {
         return self::pending($customerId)
             ->mapWithKeys(fn (Installment $installment): array => [
-                $installment->getKey() => 'Venta #'.$installment->sale_id.' · cuota '.$installment->number.' de '.$installment->sale->installments_count,
+                $installment->getKey() => 'Venta '.Sale::numberFor($installment->sale_id).' · cuota '.$installment->number.' de '.$installment->sale->installments_count,
             ])
             ->all();
     }

@@ -36,7 +36,7 @@
                 <tr>
                     @if ($bySale)
                         <td>{{ $row['sale']->date->format('d/m/Y') }}</td>
-                        <td>#{{ $row['sale']->id }}</td>
+                        <td>{{ $row['sale']->number() }}</td>
                         <td>{{ $row['sale']->customer->name ?? '—' }}</td>
                         <td>{{ $row['sale']->seller->name ?? '—' }}</td>
                         <td class="number">{{ $row['sale']->installments_count }}</td>

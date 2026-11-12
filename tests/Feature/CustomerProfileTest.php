@@ -7,6 +7,7 @@ use App\Filament\Resources\Customers\Pages\ListCustomers;
 use App\Filament\Resources\Customers\Pages\ViewCustomer;
 use App\Filament\Resources\Customers\RelationManagers\AccountMovementsRelationManager;
 use App\Filament\Resources\Customers\RelationManagers\InstallmentsRelationManager;
+use App\Filament\Resources\Customers\RelationManagers\SaleItemsRelationManager;
 use App\Filament\Resources\Payments\PaymentResource;
 use App\Models\Customer;
 use App\Models\FinancingPlan;
@@ -176,4 +177,36 @@ it('el cobro desde la ficha llega con el cliente precargado y se imputa', functi
     app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 400], $this->admin);
 
     expect(Installment::where('customer_id', $this->customer->id)->unpaid()->count())->toBe(2);
+});
+
+it('la pestaña de productos comprados muestra la venta, lo pagado y cada pago', function () {
+    $this->actingAs($this->admin);
+    $this->product->update(['name' => 'Heladera Gafa']);
+    $sale = ($this->sell)($this->customer, down: 200);
+    ($this->sell)(Customer::factory()->create());
+    app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 300], $this->admin);
+
+    Livewire::test(SaleItemsRelationManager::class, [
+        'ownerRecord' => $this->customer,
+        'pageClass' => ViewCustomer::class,
+    ])
+        ->assertCanSeeTableRecords($this->customer->saleItems)
+        ->assertCountTableRecords(1)
+        ->assertSee('Heladera Gafa')
+        ->assertSee($sale->number())
+        ->assertSee('$ 500,00')
+        ->assertSee('$ 700,00')
+        ->assertSee('Anticipo')
+        ->assertSee('Cuota 1/3');
+});
+
+it('el detalle de cuotas de la ficha muestra el producto', function () {
+    $this->actingAs($this->admin);
+    $this->product->update(['name' => 'Lavarropas Drean']);
+    ($this->sell)($this->customer);
+
+    Livewire::test(InstallmentsRelationManager::class, [
+        'ownerRecord' => $this->customer,
+        'pageClass' => ViewCustomer::class,
+    ])->assertSee('Lavarropas Drean');
 });

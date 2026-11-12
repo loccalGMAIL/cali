@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use App\Filament\Resources\PendingPurchases\PendingPurchaseResource;
+use App\Models\Sale;
 use App\Models\SaleItem;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -34,7 +35,7 @@ class PendingPurchaseItems extends TableWidget
                 TextColumn::make('product.name')->label('Producto')
                     ->url(fn (): string => PendingPurchaseResource::getUrl('index')),
                 TextColumn::make('pending_quantity')->label('Pendiente')->numeric()->weight('bold'),
-                TextColumn::make('sale_id')->label('Venta')->prefix('#')
+                TextColumn::make('sale_id')->label('Venta')->formatStateUsing(fn ($state): string => Sale::numberFor($state))
                     ->description(fn (SaleItem $record): string => $record->sale->customer->name),
             ])
             ->emptyStateHeading('Todo lo vendido ya está pedido')

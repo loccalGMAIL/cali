@@ -30,7 +30,7 @@ class PurchaseForm
                         Select::make('purchase_order_id')->label('Orden de compra')
                             ->options(fn (): array => PurchaseOrder::query()->open()->with('supplier')->orderByDesc('id')->get()
                                 ->mapWithKeys(fn (PurchaseOrder $order): array => [
-                                    $order->id => "#{$order->id} — {$order->supplier->name} ({$order->date->format('d/m/Y')}, {$order->status->getLabel()})",
+                                    $order->id => "{$order->number()} — {$order->supplier->name} ({$order->date->format('d/m/Y')}, {$order->status->getLabel()})",
                                 ])->all())
                             ->searchable()->required()->live()
                             ->afterStateUpdated(fn (?string $state, Set $set) => $set('items', self::itemsFor($state))),

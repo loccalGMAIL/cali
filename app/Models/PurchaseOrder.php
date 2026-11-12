@@ -41,6 +41,19 @@ class PurchaseOrder extends Model
         ];
     }
 
+    /**
+     * Número con el que se identifica la orden de compra: `OC-00012`.
+     */
+    public static function numberFor(int|string|null $id): string
+    {
+        return $id === null ? '—' : 'OC-'.str_pad((string) $id, 5, '0', STR_PAD_LEFT);
+    }
+
+    public function number(): string
+    {
+        return static::numberFor($this->getKey());
+    }
+
     public function isOpen(): bool
     {
         return $this->status->isOpen();

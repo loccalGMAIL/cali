@@ -162,7 +162,7 @@ it('registra una venta con cliente, total y cuotas', function () {
     $log = ActivityLog::where('subject_type', $sale->getMorphClass())->where('event', ActivityEvent::Created)->firstOrFail();
 
     expect($log->user_id)->toBe($this->admin->id)
-        ->and($log->description)->toContain("venta #{$sale->id}")->toContain('Ana')->toContain('1.200,00')->toContain('3 cuotas')
+        ->and($log->description)->toContain("venta {$sale->number()}")->toContain('Ana')->toContain('1.200,00')->toContain('3 cuotas')
         ->and($log->properties['total'])->toBe('1200.00');
 });
 
@@ -178,7 +178,7 @@ it('registra un cobro y su anulación con el motivo', function () {
 
     expect($logs)->toHaveCount(2)
         ->and($logs[0]->event)->toBe(ActivityEvent::Created)
-        ->and($logs[0]->description)->toContain("cobro #{$payment->id}")->toContain('400,00')->toContain('Ana')
+        ->and($logs[0]->description)->toContain("cobro {$payment->number()}")->toContain('400,00')->toContain('Ana')
         ->and($logs[1]->event)->toBe(ActivityEvent::Cancelled)
         ->and($logs[1]->description)->toContain('Se cargó dos veces')
         ->and($logs[1]->properties['reason'])->toBe('Se cargó dos veces');
@@ -194,7 +194,7 @@ it('registra la anulación de una venta', function () {
     $log = ActivityLog::where('event', ActivityEvent::Cancelled)->firstOrFail();
 
     expect($log->subject->is($sale))->toBeTrue()
-        ->and($log->description)->toContain("venta #{$sale->id}")->toContain('El cliente se arrepintió');
+        ->and($log->description)->toContain("venta {$sale->number()}")->toContain('El cliente se arrepintió');
 });
 
 it('registra la orden de compra, su factura y la anulación', function () {
@@ -213,7 +213,7 @@ it('registra la orden de compra, su factura y la anulación', function () {
     $orderLogs = ActivityLog::where('subject_type', $order->getMorphClass())->orderBy('id')->get();
 
     expect($orderLogs)->toHaveCount(2)
-        ->and($orderLogs[0]->description)->toContain("orden de compra #{$order->id}")->toContain('Distribuidora Sur')->toContain('2 unidades')
+        ->and($orderLogs[0]->description)->toContain("orden de compra {$order->number()}")->toContain('Distribuidora Sur')->toContain('2 unidades')
         ->and($orderLogs[1]->description)->toContain('Emitió');
 
     app(CancelPurchase::class)->handle($purchase, 'Factura equivocada', $this->admin);

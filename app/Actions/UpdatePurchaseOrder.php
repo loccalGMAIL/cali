@@ -47,7 +47,7 @@ class UpdatePurchaseOrder
 
             $this->activity->log(
                 ActivityEvent::Updated,
-                "Editó la orden de compra #{$locked->getKey()} a {$locked->supplier->name}",
+                "Editó la orden de compra {$locked->number()} a {$locked->supplier->name}",
                 $locked,
                 ['items' => $locked->items()->count()],
                 $user,

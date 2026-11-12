@@ -61,7 +61,7 @@ class CancelSale
             $this->accounts->record(
                 $locked->customer,
                 AccountMovementType::Adjustment,
-                "Anulación de la venta #{$locked->getKey()}",
+                "Anulación de la venta {$locked->number()}",
                 credit: $locked->total,
                 reference: $locked,
                 user: $user,
@@ -71,7 +71,7 @@ class CancelSale
 
             $this->activity->log(
                 ActivityEvent::Cancelled,
-                "Anuló la venta #{$locked->getKey()} de ".Money::format($locked->total)." a {$locked->customer->name}: {$reason}",
+                "Anuló la venta {$locked->number()} de ".Money::format($locked->total)." a {$locked->customer->name}: {$reason}",
                 $locked,
                 ['reason' => $reason, 'total' => $locked->total],
                 $user,
@@ -95,7 +95,7 @@ class CancelSale
             ->whereHas('installments', fn ($query) => $query->where('installments.sale_id', $sale->getKey()))
             ->orderBy('id')
             ->pluck('id')
-            ->map(fn (int $id): string => "#{$id}")
+            ->map(fn (int $id): string => Payment::numberFor($id))
             ->implode(', ');
 
         throw ValidationException::withMessages([
@@ -117,13 +117,13 @@ class CancelSale
         $downPayment->update([
             'cancelled_at' => now(),
             'cancelled_by' => $user->getKey(),
-            'cancellation_reason' => "Anulación de la venta #{$sale->getKey()}",
+            'cancellation_reason' => "Anulación de la venta {$sale->number()}",
         ]);
 
         $this->accounts->record(
             $sale->customer,
             AccountMovementType::Adjustment,
-            "Anulación del anticipo de la venta #{$sale->getKey()}",
+            "Anulación del anticipo de la venta {$sale->number()}",
             debit: $downPayment->amount,
             reference: $downPayment,
             user: $user,

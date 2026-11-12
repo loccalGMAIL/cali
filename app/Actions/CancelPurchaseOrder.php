@@ -48,7 +48,7 @@ class CancelPurchaseOrder
 
             $this->activity->log(
                 ActivityEvent::Cancelled,
-                "Anuló la orden de compra #{$locked->getKey()} a {$locked->supplier->name}: {$reason}",
+                "Anuló la orden de compra {$locked->number()} a {$locked->supplier->name}: {$reason}",
                 $locked,
                 ['reason' => $reason],
                 $user,

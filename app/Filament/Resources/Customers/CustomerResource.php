@@ -8,6 +8,7 @@ use App\Filament\Resources\Customers\Pages\ListCustomers;
 use App\Filament\Resources\Customers\Pages\ViewCustomer;
 use App\Filament\Resources\Customers\RelationManagers\AccountMovementsRelationManager;
 use App\Filament\Resources\Customers\RelationManagers\InstallmentsRelationManager;
+use App\Filament\Resources\Customers\RelationManagers\SaleItemsRelationManager;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Filament\Resources\Customers\Schemas\CustomerInfolist;
 use App\Filament\Resources\Customers\Tables\CustomersTable;
@@ -53,6 +54,7 @@ class CustomerResource extends Resource
     public static function getRelations(): array
     {
         return [
+            SaleItemsRelationManager::class,
             InstallmentsRelationManager::class,
             AccountMovementsRelationManager::class,
         ];

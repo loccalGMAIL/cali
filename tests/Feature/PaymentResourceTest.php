@@ -80,8 +80,10 @@ it('lista un cobro y muestra su detalle con la imputación', function () {
     $this->actingAs($this->admin);
     $payment = app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 400], $this->admin);
 
-    Livewire::test(ListPayments::class)->assertCanSeeTableRecords([$payment]);
-    Livewire::test(ViewPayment::class, ['record' => $payment->getKey()])->assertSuccessful();
+    $productName = Product::firstOrFail()->name;
+
+    Livewire::test(ListPayments::class)->assertCanSeeTableRecords([$payment])->assertSee($productName);
+    Livewire::test(ViewPayment::class, ['record' => $payment->getKey()])->assertSuccessful()->assertSee($productName);
 });
 
 it('no permite editar ni borrar cobros', function () {
@@ -278,7 +280,7 @@ it('las cuotas para elegir muestran vencimiento, atraso y saldo, de la más viej
     $descriptions = PaymentPreview::descriptions($this->customer->id);
 
     expect(array_keys($options))->toBe($ids)
-        ->and($options[$ids[0]])->toBe("Venta #{$this->sale->id} · cuota 1 de 3")
+        ->and($options[$ids[0]])->toBe("Venta {$this->sale->number()} · cuota 1 de 3")
         ->and($descriptions[$ids[0]])->toContain('VENCIDA hace 7 días')->toContain('$ 400,00')
         ->and($descriptions[$ids[1]])->not->toContain('VENCIDA');
 });

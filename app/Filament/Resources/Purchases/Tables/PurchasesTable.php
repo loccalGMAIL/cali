@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Purchases\Tables;
 
 use App\Filament\Resources\Purchases\Actions\CancelPurchaseAction;
 use App\Models\Purchase;
+use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -22,7 +23,7 @@ class PurchasesTable
                 TextColumn::make('date')->label('Fecha')->date('d/m/Y')->sortable(),
                 TextColumn::make('supplier.name')->label('Proveedor')->searchable(),
                 TextColumn::make('invoice_number')->label('Factura')->searchable(),
-                TextColumn::make('purchase_order_id')->label('Orden')->prefix('#')->sortable(),
+                TextColumn::make('purchase_order_id')->label('Orden')->formatStateUsing(fn ($state): string => PurchaseOrder::numberFor($state))->sortable(),
                 TextColumn::make('total')->label('Total')->money('ARS', locale: 'es_AR')->sortable()
                     ->color(fn (Purchase $record): ?string => $record->isCancelled() ? 'gray' : null)
                     ->extraAttributes(fn (Purchase $record): array => $record->isCancelled() ? ['style' => 'text-decoration: line-through'] : []),

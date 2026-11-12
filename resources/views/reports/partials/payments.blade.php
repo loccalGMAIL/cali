@@ -11,6 +11,8 @@
                 <th>Cobro</th>
                 <th>Cliente</th>
                 <th>Concepto</th>
+                <th>Producto</th>
+                <th>Cuota</th>
                 <th>Medio</th>
                 <th>Cobró</th>
                 <th class="number">Monto</th>
@@ -20,9 +22,11 @@
             @foreach ($report['payments'] as $payment)
                 <tr>
                     <td>{{ $payment->date->format('d/m/Y') }}</td>
-                    <td>#{{ $payment->id }}</td>
+                    <td>{{ $payment->number() }}</td>
                     <td>{{ $payment->customer->name ?? '—' }}</td>
-                    <td>{{ $payment->isDownPayment() ? "Anticipo venta #{$payment->sale_id}" : 'Cobro de cuotas' }}</td>
+                    <td>{{ $payment->isDownPayment() ? "Anticipo venta {$payment->sale->number()}" : 'Cobro de cuotas' }}</td>
+                    <td>{{ $payment->productsLabel() }}</td>
+                    <td>{{ $payment->installmentsLabel() }}</td>
                     <td>{{ $payment->method->getLabel() }}</td>
                     <td>{{ $payment->collector->name ?? '—' }}</td>
                     <td class="number">{{ Money::format($payment->amount) }}</td>
@@ -31,7 +35,7 @@
             </tbody>
             <tfoot>
             <tr>
-                <td colspan="6">Total cobrado ({{ $report['payments']->count() }} {{ $report['payments']->count() === 1 ? 'cobro' : 'cobros' }})</td>
+                <td colspan="8">Total cobrado ({{ $report['payments']->count() }} {{ $report['payments']->count() === 1 ? 'cobro' : 'cobros' }})</td>
                 <td class="number">{{ Money::format($report['total']) }}</td>
             </tr>
             </tfoot>

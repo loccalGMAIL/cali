@@ -11,7 +11,7 @@ class CancelSaleAction extends CancelRecordAction
 {
     protected function modalTitle(Model $record): string
     {
-        return "Anular la venta #{$record->getKey()}";
+        return "Anular la venta {$record->number()}";
     }
 
     protected function modalExplanation(): string

@@ -41,7 +41,7 @@ class CancelPayment
 
             if ($locked->isDownPayment()) {
                 throw ValidationException::withMessages([
-                    'payment' => "Este cobro es el anticipo de la venta #{$locked->sale_id}: para anularlo hay que anular la venta.",
+                    'payment' => "Este cobro es el anticipo de la venta {$locked->sale->number()}: para anularlo hay que anular la venta.",
                 ]);
             }
 
@@ -86,7 +86,7 @@ class CancelPayment
             $this->accounts->record(
                 $locked->customer,
                 AccountMovementType::Adjustment,
-                "Anulación del cobro #{$locked->getKey()}",
+                "Anulación del cobro {$locked->number()}",
                 debit: $locked->amount,
                 reference: $locked,
                 user: $user,
@@ -94,7 +94,7 @@ class CancelPayment
 
             $this->activity->log(
                 ActivityEvent::Cancelled,
-                "Anuló el cobro #{$locked->getKey()} de ".Money::format($locked->amount)." a {$locked->customer->name}: {$reason}",
+                "Anuló el cobro {$locked->number()} de ".Money::format($locked->amount)." a {$locked->customer->name}: {$reason}",
                 $locked,
                 ['reason' => $reason, 'amount' => $locked->amount],
                 $user,
