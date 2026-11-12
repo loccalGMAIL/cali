@@ -16,6 +16,9 @@ use InvalidArgumentException;
  *
  * Para la porción de costo de cada cuota (lo que no es ganancia) se toma costo + flete.
  *
+ * Todas las cuotas vencen el día 30 de cada mes (último día en febrero); de la fecha de la
+ * primera cuota sólo importa el mes.
+ *
  * Todos los montos viajan como strings decimales con 2 decimales y se operan con bcmath
  * para evitar errores de punto flotante.
  *
@@ -34,6 +37,22 @@ use InvalidArgumentException;
  */
 class SaleCalculator
 {
+    /**
+     * Día del mes en que vencen todas las cuotas (en los meses más cortos, el último día).
+     */
+    public const DUE_DAY = 30;
+
+    /**
+     * Fecha de vencimiento del mes de $month desplazado $monthOffset meses: siempre el día 30
+     * (o el último día del mes si no llega a 30, como febrero).
+     */
+    public static function dueDateFor(CarbonInterface|string $month, int $monthOffset = 0): CarbonImmutable
+    {
+        $firstOfMonth = CarbonImmutable::parse($month)->startOfMonth()->addMonthsNoOverflow($monthOffset);
+
+        return $firstOfMonth->day(min(self::DUE_DAY, $firstOfMonth->daysInMonth));
+    }
+
     /**
      * @param  list<Line>  $lines
      * @return Result
@@ -117,7 +136,6 @@ class SaleCalculator
         // Monto de cuota redondeado hacia abajo; la última absorbe el redondeo.
         $base = bcdiv($financed, (string) $count, 2);
         $lastAmount = bcsub($financed, bcmul($base, (string) ($count - 1), 2), 2);
-        $firstDue = CarbonImmutable::parse($firstDueDate)->startOfDay();
 
         // El costo (con flete) no cubierto por el anticipo se reparte entre las cuotas; la última absorbe el redondeo.
         $costToSpread = bcsub($costToRecover, $this->costShare($costToRecover, $downPayment, $total), 2);
@@ -137,7 +155,7 @@ class SaleCalculator
 
             $installments[] = [
                 'number' => $number,
-                'due_date' => $firstDue->addMonthsNoOverflow($number - 1),
+                'due_date' => self::dueDateFor($firstDueDate, $number - 1),
                 'amount' => $amount,
                 'cost_portion' => $costPortion,
             ];

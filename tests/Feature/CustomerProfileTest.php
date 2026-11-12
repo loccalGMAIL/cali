@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
 use App\Services\AccountService;
+use App\Services\SaleCalculator;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -42,7 +43,7 @@ it('calcula la deuda, la deuda vencida y el próximo vencimiento del cliente', f
     expect($this->customer->debt())->toBe('1200.00')
         ->and($this->customer->overdueCount())->toBe(2)
         ->and($this->customer->overdueDebt())->toBe('800.00')
-        ->and($this->customer->nextDueDate()->toDateString())->toBe(today()->subMonths(2)->toDateString());
+        ->and($this->customer->nextDueDate()->toDateString())->toBe(SaleCalculator::dueDateFor(today(), -2)->toDateString());
 });
 
 it('un cliente sin deuda devuelve ceros', function () {

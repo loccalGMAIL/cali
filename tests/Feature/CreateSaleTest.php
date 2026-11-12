@@ -53,7 +53,8 @@ it('genera la venta, las cuotas y el débito en cuenta corriente: (costo + marge
         ->and($sale->installments->pluck('amount')->all())->toBe(['300.00', '300.00', '300.00'])
         ->and($sale->installments->first()->status)->toBe(InstallmentStatus::Pending)
         ->and($sale->installments->first()->customer_id)->toBe($this->customer->id)
-        ->and($sale->installments->first()->due_date->toDateString())->toBe('2026-12-07');
+        ->and($sale->installments->first()->due_date->toDateString())->toBe('2026-12-30')
+        ->and($sale->first_due_date->toDateString())->toBe('2026-12-30');
 
     $debit = AccountMovement::where('type', AccountMovementType::Sale)->firstOrFail();
     expect($debit->debit)->toBe('1200.00')->and($debit->reference->is($sale))->toBeTrue();

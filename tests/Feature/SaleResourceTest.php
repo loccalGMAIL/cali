@@ -34,7 +34,7 @@ it('carga una venta desde el panel con costo y margen, y deja cuotas y pendiente
             'seller_id' => $admin->id,
             'financing_plan_id' => $this->plan->id,
             'date' => '2026-11-07',
-            'first_due_date' => '2026-12-07',
+            'first_due_date' => '2026-12-30',
             'down_payment' => 200,
             'down_payment_method' => 'cash',
             'items' => [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 500]],
@@ -60,7 +60,7 @@ it('carga una venta desde el panel con flete y lo divide en las cuotas', functio
             'seller_id' => $admin->id,
             'financing_plan_id' => $this->plan->id,
             'date' => '2026-11-07',
-            'first_due_date' => '2026-12-07',
+            'first_due_date' => '2026-12-30',
             'down_payment' => 0,
             'down_payment_method' => 'cash',
             'items' => [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_freight' => 300, 'unit_margin' => 300]],
@@ -86,7 +86,7 @@ it('muestra en el formulario el error de un anticipo mayor al total', function (
             'seller_id' => $admin->id,
             'financing_plan_id' => $this->plan->id,
             'date' => '2026-11-07',
-            'first_due_date' => '2026-12-07',
+            'first_due_date' => '2026-12-30',
             'down_payment' => 5000,
             'items' => [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 400]],
         ])
@@ -107,7 +107,7 @@ it('fuerza al vendedor a registrar la venta a su nombre', function () {
             'seller_id' => $other->id,
             'financing_plan_id' => $this->plan->id,
             'date' => '2026-11-07',
-            'first_due_date' => '2026-12-07',
+            'first_due_date' => '2026-12-30',
             'items' => [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 400]],
         ])
         ->call('create');
@@ -157,8 +157,8 @@ it('la vista previa muestra total, cuota y cronograma', function () {
         ->and($html)->toContain('$ 560,00')
         ->and($html)->toContain('$ 960,00')
         ->and($html)->toContain('3 cuotas de $ 320,00')
-        ->and($html)->toContain('07/12/2026')
-        ->and($html)->toContain('07/02/2027');
+        ->and($html)->toContain('30/12/2026')
+        ->and($html)->toContain('28/02/2027');
 });
 
 it('la vista previa muestra el flete y lo incluye en las cuotas', function () {
@@ -289,7 +289,7 @@ it('el formulario de venta pide fecha, cliente y vendedor; después productos; y
     $this->actingAs(User::factory()->admin()->create());
 
     Livewire::test(CreateSale::class)
-        ->assertSeeInOrder(['Fecha de la venta', 'Cliente', 'Vendedor', 'Productos', 'Pago', 'Plan de financiación', 'Fecha de la primera cuota', 'Anticipo']);
+        ->assertSeeInOrder(['Fecha de la venta', 'Cliente', 'Vendedor', 'Productos', 'Pago', 'Plan de financiación', 'Vencimiento de la primera cuota', 'Anticipo']);
 });
 
 it('crea un producto nuevo desde el selector de productos de la venta', function () {

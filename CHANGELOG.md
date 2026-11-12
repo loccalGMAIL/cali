@@ -13,6 +13,16 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.5.0] - 2026-11-12
+
+No requiere migración. Las ventas y cuotas ya creadas no cambian.
+
+### Cambiado
+- **Todas las cuotas vencen el día 30** de cada mes (en febrero, el último día: 28 o 29).
+- En la venta, la primera cuota se elige por **mes** (lista de vencimientos de los próximos 24 meses,
+  por defecto el mes siguiente) en lugar de una fecha libre; las siguientes vencen el día 30 de cada
+  mes consecutivo.
+
 ## [0.4.0] - 2026-11-12
 
 Requiere correr `php artisan migrate` (agrega `freight` a `products`, `unit_freight` a `sale_items`
@@ -177,7 +187,8 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.4.0...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/loccalGMAIL/cali/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/loccalGMAIL/cali/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/loccalGMAIL/cali/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/loccalGMAIL/cali/compare/v0.1.1...v0.2.0

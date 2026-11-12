@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\FinancingPlan;
 use App\Models\Sale;
 use App\Models\User;
+use App\Services\SaleCalculator;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -33,7 +34,7 @@ class SaleFactory extends Factory
             'total_freight' => 0,
             'down_payment' => 0,
             'financed_amount' => 1000,
-            'first_due_date' => today()->addMonth()->toDateString(),
+            'first_due_date' => SaleCalculator::dueDateFor(today(), 1)->toDateString(),
             'status' => SaleStatus::Active,
             'notes' => null,
         ];
