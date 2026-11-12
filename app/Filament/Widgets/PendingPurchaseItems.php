@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use App\Filament\Resources\PendingPurchases\PendingPurchaseResource;
 use App\Models\SaleItem;
 use Filament\Support\Icons\Heroicon;
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PendingPurchaseItems extends TableWidget
 {
+    use PersistsTableColumnsPerUser;
+
     protected static ?int $sort = 5;
 
     protected int|string|array $columnSpan = 1;

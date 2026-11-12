@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PendingPurchases\Pages;
 
+use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use App\Filament\Resources\PendingPurchases\PendingPurchaseResource;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use Filament\Actions\Action;
@@ -10,6 +11,8 @@ use Filament\Support\Icons\Heroicon;
 
 class ListPendingPurchases extends ListRecords
 {
+    use PersistsTableColumnsPerUser;
+
     protected static string $resource = PendingPurchaseResource::class;
 
     protected function getHeaderActions(): array

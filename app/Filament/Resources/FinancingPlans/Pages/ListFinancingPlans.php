@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\FinancingPlans\Pages;
 
+use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use App\Filament\Resources\FinancingPlans\FinancingPlanResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListFinancingPlans extends ListRecords
 {
+    use PersistsTableColumnsPerUser;
+
     protected static string $resource = FinancingPlanResource::class;
 
     protected function getHeaderActions(): array

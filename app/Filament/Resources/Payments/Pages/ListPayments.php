@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\Payments\Pages;
 
+use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use App\Filament\Resources\Payments\PaymentResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListPayments extends ListRecords
 {
+    use PersistsTableColumnsPerUser;
+
     protected static string $resource = PaymentResource::class;
 
     protected function getHeaderActions(): array

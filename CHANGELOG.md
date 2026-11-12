@@ -13,6 +13,19 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.6.1] - 2026-11-12
+
+Requiere migración (`php artisan migrate`): crea la tabla `table_column_preferences`.
+
+### Agregado
+- Columna **Producto** en el listado de Ventas (con varios productos muestra los primeros dos y se
+  puede expandir). El buscador de Ventas también encuentra por producto.
+- Todas las columnas de todas las tablas del panel se pueden ocultar desde el selector de columnas.
+
+### Cambiado
+- Las columnas que cada usuario muestra u oculta se guardan en la base de datos, por usuario y por
+  tabla, en lugar de solo en la sesión: se conservan al cerrar sesión o cambiar de equipo.
+
 ## [0.6.0] - 2026-11-12
 
 No requiere migración.
@@ -206,7 +219,8 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.6.0...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/loccalGMAIL/cali/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/loccalGMAIL/cali/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/loccalGMAIL/cali/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/loccalGMAIL/cali/compare/v0.3.0...v0.4.0

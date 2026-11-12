@@ -17,7 +17,7 @@ class SuppliersTable
                 TextColumn::make('name')->label('Nombre')->searchable()->sortable(),
                 TextColumn::make('cuit')->label('CUIT')->searchable(),
                 TextColumn::make('phone')->label('Teléfono'),
-                TextColumn::make('email')->label('Email')->toggleable(),
+                TextColumn::make('email')->label('Email'),
                 IconColumn::make('active')->label('Activo')->boolean(),
             ])
             ->defaultSort('name')

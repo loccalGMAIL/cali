@@ -16,12 +16,13 @@ class SalesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['customer', 'seller']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['customer', 'seller', 'items.product']))
             ->columns([
                 TextColumn::make('id')->label('N°')->sortable(),
                 TextColumn::make('date')->label('Fecha')->date('d/m/Y')->sortable(),
                 TextColumn::make('customer.name')->label('Cliente')->searchable(),
-                TextColumn::make('seller.name')->label('Vendedor')->toggleable(),
+                TextColumn::make('items.product.name')->label('Producto')->listWithLineBreaks()->limitList(2)->expandableLimitedList()->searchable(),
+                TextColumn::make('seller.name')->label('Vendedor'),
                 TextColumn::make('installments_count')->label('Plan')
                     ->formatStateUsing(fn (Sale $record): string => $record->installments_count === 1 ? '1 cuota' : "{$record->installments_count} cuotas"),
                 TextColumn::make('total')->label('Total')->money('ARS', locale: 'es_AR')->sortable(),

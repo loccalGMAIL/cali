@@ -19,10 +19,10 @@ class ProductsTable
             ->columns([
                 TextColumn::make('sku')->label('Código')->searchable()->sortable(),
                 TextColumn::make('name')->label('Nombre')->searchable()->sortable(),
-                TextColumn::make('brand')->label('Marca')->searchable()->toggleable(),
-                TextColumn::make('supplier.name')->label('Proveedor habitual')->placeholder('—')->toggleable(),
+                TextColumn::make('brand')->label('Marca')->searchable(),
+                TextColumn::make('supplier.name')->label('Proveedor habitual')->placeholder('—'),
                 TextColumn::make('last_cost')->label('Último costo')->money('ARS', locale: 'es_AR')->sortable(),
-                TextColumn::make('freight')->label('Flete')->money('ARS', locale: 'es_AR')->sortable()->toggleable(),
+                TextColumn::make('freight')->label('Flete')->money('ARS', locale: 'es_AR')->sortable(),
                 IconColumn::make('active')->label('Activo')->boolean(),
             ])
             ->defaultSort('name')
