@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Customers\RelationManagers;
 
 use App\Enums\AccountMovementType;
+use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class AccountMovementsRelationManager extends RelationManager
 {
+    use PersistsTableColumnsPerUser;
+
     protected static string $relationship = 'accountMovements';
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -72,6 +73,14 @@ class User extends Authenticatable implements ActivityLoggable, FilamentUser
             || Payment::query()->where('collected_by', $this->getKey())->exists()
             || PurchaseOrder::query()->where('user_id', $this->getKey())->exists()
             || Purchase::query()->where('user_id', $this->getKey())->exists();
+    }
+
+    /**
+     * @return HasMany<TableColumnPreference, $this>
+     */
+    public function tableColumnPreferences(): HasMany
+    {
+        return $this->hasMany(TableColumnPreference::class);
     }
 
     public function canAccessPanel(Panel $panel): bool

@@ -29,7 +29,7 @@ class PaymentsTable
                 TextColumn::make('status')->label('Estado')->badge()
                     ->state(fn (Payment $record): string => $record->isCancelled() ? 'Anulado' : 'Vigente')
                     ->color(fn (string $state): string => $state === 'Anulado' ? 'danger' : 'success'),
-                TextColumn::make('collector.name')->label('Cobrado por')->toggleable(),
+                TextColumn::make('collector.name')->label('Cobrado por'),
             ])
             ->defaultSort('id', 'desc')
             ->filters([

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Payments\PaymentResource;
 use App\Models\Installment;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OverdueInstallments extends TableWidget
 {
+    use PersistsTableColumnsPerUser;
+
     protected static ?int $sort = 3;
 
     protected int|string|array $columnSpan = 'full';

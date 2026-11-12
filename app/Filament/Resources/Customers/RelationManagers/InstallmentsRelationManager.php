@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Customers\RelationManagers;
 
 use App\Enums\InstallmentStatus;
+use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use App\Models\Installment;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class InstallmentsRelationManager extends RelationManager
 {
+    use PersistsTableColumnsPerUser;
+
     protected static string $relationship = 'installments';
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string

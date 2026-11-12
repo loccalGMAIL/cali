@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Concerns\PersistsTableColumnsPerUser;
 use App\Filament\Resources\Purchases\PurchaseResource;
 use App\Models\Purchase;
 use Filament\Support\Icons\Heroicon;
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class LatestPurchases extends TableWidget
 {
+    use PersistsTableColumnsPerUser;
+
     protected static ?int $sort = 6;
 
     protected int|string|array $columnSpan = 1;
