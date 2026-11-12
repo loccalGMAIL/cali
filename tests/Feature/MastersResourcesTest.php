@@ -119,7 +119,7 @@ it('crea un vendedor con contraseña hasheada', function () {
         ->and(Hash::check('secreto123', $user->password))->toBeTrue();
 });
 
-it('crea un producto sin código ni proveedor habitual', function () {
+it('crea un producto sin código ni proveedor habitual y le asigna un código del sistema', function () {
     $this->actingAs(User::factory()->admin()->create());
 
     Livewire::test(CreateProduct::class)
@@ -132,9 +132,15 @@ it('crea un producto sin código ni proveedor habitual', function () {
         ->assertHasNoFormErrors();
 
     $product = Product::where('name', 'Microondas')->firstOrFail();
-    expect($product->sku)->toBeNull()
+    expect($product->sku)->toBe('PROD-00001')
         ->and($product->supplier_id)->toBeNull();
+});
 
-    Product::factory()->create(['sku' => null]);
-    expect(Product::whereNull('sku')->count())->toBe(2);
+it('genera códigos PROD correlativos y respeta los códigos cargados a mano', function () {
+    Product::factory()->create(['sku' => 'HE-0001']);
+    Product::factory()->create(['sku' => 'PROD-00007']);
+
+    expect(Product::factory()->create(['sku' => null])->sku)->toBe('PROD-00008')
+        ->and(Product::factory()->create(['sku' => null])->sku)->toBe('PROD-00009')
+        ->and(Product::factory()->create(['sku' => 'XX-1'])->sku)->toBe('XX-1');
 });

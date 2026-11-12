@@ -31,7 +31,6 @@ class ProductForm
                         Select::make('supplier_id')->label('Proveedor habitual')
                             ->options(fn (): array => Supplier::query()->where('active', true)->orderBy('name')->pluck('name', 'id')->all())
                             ->searchable()
-                            ->helperText('Sirve para armar la orden de compra de cada proveedor.')
                             ->columnSpan(['default' => 12, 'md' => 6]),
                         TextInput::make('last_cost')->label('Último costo')->prefix('$')
                             ->disabled()->dehydrated(false)

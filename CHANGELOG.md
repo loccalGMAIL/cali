@@ -7,11 +7,13 @@ es [semántico](https://semver.org/lang/es/): `MAJOR.MINOR.PATCH`. Mientras la v
 el sistema está en desarrollo y puede haber cambios que rompan la compatibilidad; la `1.0.0`
 llegará con la salida a producción.
 
-La versión vigente también está en `config/cali.php` (`version`) y se muestra en el pie del
-panel. Al publicar una versión nueva hay que actualizar las tres cosas: este archivo, esa
+La versión vigente también está en `config/cali.php` (`version`) y se muestra en la barra
+superior del panel y en el login. Al publicar una versión nueva hay que actualizar las tres cosas: este archivo, esa
 configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
+
+## [0.4.0] - 2026-11-12
 
 Requiere correr `php artisan migrate` (agrega `freight` a `products`, `unit_freight` a `sale_items`
 y `total_freight` a `sales`, todas con 0 por defecto: las ventas existentes no cambian).
@@ -22,7 +24,13 @@ y `total_freight` a `sales`, todas con 0 por defecto: las ventas existentes no c
   (se puede cambiar). Precio unitario = costo + flete + margen.
 - El resumen de la venta y su ficha muestran el flete por separado del costo y del margen.
 
+- **Código automático** de producto: si al crear uno no se carga código, el sistema le asigna el
+  siguiente correlativo `PROD-00001`, `PROD-00002`, … (los códigos cargados a mano se respetan).
+
 ### Cambiado
+- La **versión del sistema** se muestra en la barra superior (antes en el pie) y una sola vez en
+  el login (aparecía duplicada); se quitó la palabra «Cali».
+- Se quitó el texto de ayuda del campo «Proveedor habitual» en el formulario de productos.
 - **Cuotas**: (costo + flete + margen − anticipo) ÷ cantidad de cuotas. El flete integra el valor
   del producto y se divide en las cuotas junto con el resto.
 - La porción de costo de cada cuota (lo que no es ganancia) incluye el flete.
@@ -169,7 +177,8 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.3.0...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/loccalGMAIL/cali/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/loccalGMAIL/cali/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/loccalGMAIL/cali/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/loccalGMAIL/cali/compare/v0.1.0...v0.1.1

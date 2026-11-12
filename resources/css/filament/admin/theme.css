@@ -54,10 +54,18 @@
     padding-inline: 0.5rem !important;
 }
 
-/* Versión del sistema, discreta, en el pie del panel y en el login. */
+/* Versión del sistema, discreta, en la barra superior y en el login. */
 .cali-version {
-    margin: 1.5rem 0 1rem;
-    text-align: center;
     font-size: 0.75rem;
     color: #9ca3af;
+}
+
+.cali-version-login {
+    margin: 1.5rem 0 1rem;
+    text-align: center;
+}
+
+.cali-version-navbar {
+    margin: 0;
+    white-space: nowrap;
 }

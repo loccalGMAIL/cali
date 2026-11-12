@@ -26,6 +26,31 @@ class Product extends Model implements ActivityLoggable
     /** @use HasFactory<ProductFactory> */
     use HasFactory, LogsActivity;
 
+    public const AUTOMATIC_SKU_PREFIX = 'PROD-';
+
+    protected static function booted(): void
+    {
+        static::creating(function (Product $product): void {
+            if (blank($product->sku)) {
+                $product->sku = static::nextAutomaticSku();
+            }
+        });
+    }
+
+    /**
+     * Siguiente código correlativo del sistema (PROD-00001, PROD-00002, ...).
+     */
+    public static function nextAutomaticSku(): string
+    {
+        $lastNumber = static::query()
+            ->where('sku', 'like', self::AUTOMATIC_SKU_PREFIX.'%')
+            ->pluck('sku')
+            ->map(fn (string $sku): int => preg_match('/^'.preg_quote(self::AUTOMATIC_SKU_PREFIX, '/').'(\d+)$/', $sku, $matches) ? (int) $matches[1] : 0)
+            ->max() ?? 0;
+
+        return self::AUTOMATIC_SKU_PREFIX.str_pad((string) ($lastNumber + 1), 5, '0', STR_PAD_LEFT);
+    }
+
     /**
      * @return array<string, string>
      */

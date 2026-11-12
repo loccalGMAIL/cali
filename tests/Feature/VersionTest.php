@@ -22,12 +22,20 @@ it('la última versión del changelog es la vigente', function () {
 });
 
 it('muestra la versión en el login y en el panel', function () {
-    $version = 'Cali v'.config('cali.version');
+    $version = '>v'.config('cali.version').'<';
 
-    $this->get('http://'.config('domains.panel').'/login')->assertOk()->assertSee($version);
+    $this->get('http://'.config('domains.panel').'/login')->assertOk()->assertSee($version, false)
+        ->assertSeeInOrder(['cali-version-login'], false);
 
     $this->actingAs(User::factory()->admin()->create())
         ->get('http://'.config('domains.panel').'/')
         ->assertOk()
-        ->assertSee($version);
+        ->assertSee($version, false)
+        ->assertSee('cali-version-navbar', false);
+});
+
+it('muestra la versión una sola vez en el login', function () {
+    $html = $this->get('http://'.config('domains.panel').'/login')->assertOk()->getContent();
+
+    expect(substr_count($html, '>v'.config('cali.version').'<'))->toBe(1);
 });

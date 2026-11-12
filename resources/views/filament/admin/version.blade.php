@@ -1,1 +1,1 @@
-<p class="cali-version">Cali v{{ config('cali.version') }}</p>
+<p class="cali-version {{ ($isLogin ?? false) ? 'cali-version-login' : 'cali-version-navbar' }}">v{{ config('cali.version') }}</p>

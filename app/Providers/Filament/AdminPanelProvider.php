@@ -34,8 +34,8 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandLogo(fn (): View => view('filament.admin.logo'))
             ->brandLogoHeight(fn (): string => auth()->guest() ? '3.25rem' : '2rem')
-            ->renderHook(PanelsRenderHook::FOOTER, fn (): View => view('filament.admin.version'))
-            ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn (): View => view('filament.admin.version'))
+            ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn (): View => view('filament.admin.version', ['isLogin' => true]))
+            ->renderHook(PanelsRenderHook::USER_MENU_BEFORE, fn (): View => view('filament.admin.version'))
             ->navigationGroups([
                 NavigationGroup::make('Ventas'),
                 NavigationGroup::make('Compras'),
