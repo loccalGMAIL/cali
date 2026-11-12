@@ -46,17 +46,19 @@ it('exige la contraseña actual para cambiar el email', function () {
     expect($user->fresh()->email)->toBe('nuevo@example.com');
 });
 
-it('ordena el menú en Ventas, Compras y Configuración con etiquetas en español', function () {
+it('ordena el menú en Ventas, Compras, Informes y Configuración con etiquetas en español', function () {
     $this->actingAs(User::factory()->admin()->create());
 
     $groups = collect(Filament::getNavigation());
 
     expect($groups->map(fn ($group) => $group->getLabel())->filter()->values()->all())
-        ->toBe(['Ventas', 'Compras', 'Configuración']);
+        ->toBe(['Ventas', 'Compras', 'Informes', 'Configuración']);
 
     $labels = $groups->flatMap(fn ($group) => $group->getItems())->map(fn ($item) => $item->getLabel());
     expect($labels)->toContain('Planes de financiación')->toContain('Usuarios y vendedores')
-        ->toContain('Pendientes de compra')->toContain('Órdenes de compra')->toContain('Facturas de compra');
+        ->toContain('Pendientes de compra')->toContain('Órdenes de compra')->toContain('Facturas de compra')
+        ->toContain('Cuotas pendientes por cliente')->toContain('Cobranza del mes')
+        ->toContain('Cobros realizados')->toContain('Ventas y ganancia');
 });
 
 it('el dashboard no muestra la tarjeta de bienvenida con el botón Salir', function () {

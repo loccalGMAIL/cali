@@ -13,6 +13,15 @@ class Money
         return '$'."\u{00A0}".number_format((float) $amount, 0, ',', '.');
     }
 
+    /**
+     * Monto sin signo ni centavos, para las celdas de una grilla: `1.234.567`. El cero queda
+     * como un guion, así se distingue de un vistazo dónde hay deuda.
+     */
+    public static function cell(float|int|string|null $amount): string
+    {
+        return (float) $amount == 0.0 ? '–' : number_format((float) $amount, 0, ',', '.');
+    }
+
     /** Formatea un monto en pesos argentinos: `$ 1.234,56`. */
     public static function format(float|int|string|null $amount): string
     {
