@@ -93,7 +93,6 @@ class SaleForm
                         Select::make('first_due_date')->label('Vencimiento de la primera cuota')
                             ->options(fn (): array => self::firstDueDateOptions())
                             ->default(SaleCalculator::dueDateFor(today(), 1)->toDateString())
-                            ->helperText('Todas las cuotas vencen el día 30 de cada mes (en febrero, el último día).')
                             ->required()->live(),
                         TextInput::make('down_payment')->label('Anticipo')->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true)
                             ->dehydrateStateUsing(fn ($state) => $state === null || $state === '' ? 0 : $state),

@@ -14,7 +14,7 @@ class FinancingPlanForm
         return $schema
             ->components([
                 Section::make('Plan de financiación')
-                    ->description('La cuota es (costo + margen − anticipo) ÷ cantidad de cuotas. Un plan de 1 cuota funciona como venta de contado.')
+                    ->description('La cuota es (costo + flete + margen − anticipo) ÷ cantidad de cuotas, sin recargo. Un plan de 1 cuota funciona como venta de contado.')
                     ->columns(2)
                     ->columnSpanFull()
                     ->schema([
