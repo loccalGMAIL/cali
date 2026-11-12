@@ -30,7 +30,6 @@ class UserForm
                         Select::make('role')->label('Rol')->options(UserRole::class)
                             ->default(UserRole::Seller)->required(),
                         Toggle::make('active')->label('Activo')->default(true),
-                        Toggle::make('is_default_seller')->label('Vendedor por defecto')->default(false),
                     ]),
             ]);
     }

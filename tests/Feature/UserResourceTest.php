@@ -1,6 +1,5 @@
 <?php
 
-use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Models\Payment;
@@ -70,13 +69,12 @@ it('un vendedor no puede borrar usuarios', function () {
     expect(User::factory()->seller()->create()->can('delete', $other))->toBeFalse();
 });
 
-it('marca un vendedor por defecto desde la tabla y desmarca al anterior', function () {
+it('marca un vendedor por defecto desde el ícono de la tabla y desmarca al anterior', function () {
     $previous = User::factory()->seller()->create(['is_default_seller' => true]);
     $seller = User::factory()->seller()->create();
 
     Livewire::test(ListUsers::class)
-        ->assertActionHidden(TestAction::make('makeDefaultSeller')->table($previous))
-        ->callAction(TestAction::make('makeDefaultSeller')->table($seller))
+        ->callTableColumnAction('is_default_seller', $seller)
         ->assertNotified();
 
     expect($seller->fresh()->is_default_seller)->toBeTrue()
@@ -84,28 +82,19 @@ it('marca un vendedor por defecto desde la tabla y desmarca al anterior', functi
         ->and(User::defaultSeller()?->is($seller))->toBeTrue();
 });
 
-it('no ofrece marcar como vendedor por defecto a un usuario inactivo', function () {
+it('no marca como vendedor por defecto a un usuario inactivo desde el ícono', function () {
     $inactive = User::factory()->seller()->inactive()->create();
 
-    Livewire::test(ListUsers::class)
-        ->assertActionHidden(TestAction::make('makeDefaultSeller')->table($inactive));
+    Livewire::test(ListUsers::class)->callTableColumnAction('is_default_seller', $inactive);
+
+    expect($inactive->fresh()->is_default_seller)->toBeFalse();
 });
 
 it('al crear un usuario como vendedor por defecto deja uno solo marcado', function () {
     $previous = User::factory()->seller()->create(['is_default_seller' => true]);
 
-    Livewire::test(CreateUser::class)
-        ->fillForm([
-            'name' => 'Nuevo Vendedor',
-            'email' => 'nuevo@cali.localhost',
-            'password' => 'password123',
-            'role' => 'seller',
-            'active' => true,
-            'is_default_seller' => true,
-        ])
-        ->call('create')
-        ->assertHasNoFormErrors();
+    $new = User::factory()->seller()->create(['is_default_seller' => true]);
 
-    expect(User::where('is_default_seller', true)->pluck('email')->all())->toBe(['nuevo@cali.localhost'])
+    expect(User::where('is_default_seller', true)->pluck('id')->all())->toBe([$new->id])
         ->and($previous->fresh()->is_default_seller)->toBeFalse();
 });
