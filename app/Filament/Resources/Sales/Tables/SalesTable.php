@@ -6,6 +6,7 @@ use App\Enums\SaleStatus;
 use App\Filament\Resources\Sales\Actions\CancelSaleAction;
 use App\Models\Sale;
 use App\Models\User;
+use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -36,6 +37,7 @@ class SalesTable
             ])
             ->recordActions([
                 ViewAction::make()->label('Ver'),
+                EditAction::make()->label('Editar'),
                 CancelSaleAction::make(),
             ]);
     }

@@ -98,3 +98,16 @@ it('al crear un usuario como vendedor por defecto deja uno solo marcado', functi
     expect(User::where('is_default_seller', true)->pluck('id')->all())->toBe([$new->id])
         ->and($previous->fresh()->is_default_seller)->toBeFalse();
 });
+
+it('habilita el permiso de editar ventas desde la ficha del usuario', function () {
+    $seller = User::factory()->seller()->create();
+
+    expect($seller->can_edit_sales)->toBeFalse();
+
+    Livewire::test(EditUser::class, ['record' => $seller->getKey()])
+        ->fillForm(['can_edit_sales' => true])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($seller->fresh()->can_edit_sales)->toBeTrue();
+});

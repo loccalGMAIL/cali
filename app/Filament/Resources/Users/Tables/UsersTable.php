@@ -40,6 +40,7 @@ class UsersTable
 
                         Notification::make()->success()->title("{$record->name} es ahora el vendedor por defecto")->send();
                     }),
+                IconColumn::make('can_edit_sales')->label('Edita ventas')->boolean(),
                 IconColumn::make('active')->label('Activo')->boolean(),
             ])
             ->defaultSort('name')
