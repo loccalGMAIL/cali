@@ -30,6 +30,8 @@ class UserForm
                         Select::make('role')->label('Rol')->options(UserRole::class)
                             ->default(UserRole::Seller)->required(),
                         Toggle::make('active')->label('Activo')->default(true),
+                        Toggle::make('can_edit_sales')->label('Puede editar ventas')->default(false)
+                            ->helperText('Permite modificar ventas ya confirmadas. Un vendedor solo puede editar las suyas.'),
                     ]),
             ]);
     }

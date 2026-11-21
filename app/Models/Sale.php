@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Enums\SaleStatus;
 use Database\Factories\SaleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -67,6 +68,57 @@ class Sale extends Model
     public function isCancelled(): bool
     {
         return $this->status === SaleStatus::Cancelled;
+    }
+
+    /**
+     * El cobro del anticipo, si lo hubo y no está anulado.
+     */
+    public function activeDownPayment(): ?Payment
+    {
+        return $this->downPayments()->notCancelled()->latest('id')->first();
+    }
+
+    /**
+     * Por qué no se pueden cambiar el cliente, los productos, el plan, el anticipo ni los
+     * vencimientos (null si se puede): cambiarlos rearma las cuotas, y las cuotas con cobros
+     * imputados no se pueden rearmar sin perder qué se pagó de cada una.
+     */
+    public function installmentPaymentsLockReason(): ?string
+    {
+        $numbers = Payment::query()
+            ->notCancelled()
+            ->whereHas('installments', fn (Builder $query) => $query->where('installments.sale_id', $this->getKey()))
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn (int $id): string => Payment::numberFor($id));
+
+        if ($numbers->isEmpty()) {
+            return null;
+        }
+
+        return 'La venta tiene cobros imputados a sus cuotas ('.$numbers->implode(', ').'): para cambiar el cliente, '
+            .'los productos, el plan, el anticipo o los vencimientos hay que anular esos cobros primero.';
+    }
+
+    /**
+     * Por qué no se pueden cambiar los productos (null si se puede): lo que ya se le pidió al
+     * proveedor en una orden de compra (no anulada) tiene que seguir existiendo en la venta.
+     */
+    public function purchaseOrdersLockReason(): ?string
+    {
+        $numbers = PurchaseOrder::query()
+            ->where('status', '!=', PurchaseOrderStatus::Cancelled->value)
+            ->whereHas('items.saleItem', fn (Builder $query) => $query->where('sale_id', $this->getKey()))
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn (int $id): string => PurchaseOrder::numberFor($id));
+
+        if ($numbers->isEmpty()) {
+            return null;
+        }
+
+        return 'Hay productos de la venta incluidos en órdenes de compra ('.$numbers->implode(', ').'): para cambiar '
+            .'los productos hay que sacarlos de esas órdenes (o anularlas) primero.';
     }
 
     /**

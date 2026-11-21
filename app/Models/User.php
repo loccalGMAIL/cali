@@ -19,8 +19,9 @@ use Illuminate\Notifications\Notifiable;
 /**
  * @property UserRole $role
  * @property bool $is_default_seller
+ * @property bool $can_edit_sales
  */
-#[Fillable(['name', 'email', 'password', 'role', 'google_id', 'active', 'is_default_seller'])]
+#[Fillable(['name', 'email', 'password', 'role', 'google_id', 'active', 'is_default_seller', 'can_edit_sales'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements ActivityLoggable, FilamentUser
 {
@@ -38,6 +39,7 @@ class User extends Authenticatable implements ActivityLoggable, FilamentUser
             'role' => UserRole::class,
             'active' => 'boolean',
             'is_default_seller' => 'boolean',
+            'can_edit_sales' => 'boolean',
         ];
     }
 
@@ -96,6 +98,14 @@ class User extends Authenticatable implements ActivityLoggable, FilamentUser
     public function isSeller(): bool
     {
         return $this->role === UserRole::Seller;
+    }
+
+    /**
+     * Permiso habilitado desde la ficha del usuario (vale para administradores y vendedores).
+     */
+    public function canEditSales(): bool
+    {
+        return (bool) $this->can_edit_sales;
     }
 
     /**
