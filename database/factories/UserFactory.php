@@ -27,6 +27,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'role' => UserRole::Seller,
             'active' => true,
+            'can_edit_sales' => false,
             'remember_token' => Str::random(10),
         ];
     }
@@ -39,6 +40,11 @@ class UserFactory extends Factory
     public function seller(): static
     {
         return $this->state(fn () => ['role' => UserRole::Seller]);
+    }
+
+    public function canEditSales(): static
+    {
+        return $this->state(fn () => ['can_edit_sales' => true]);
     }
 
     public function inactive(): static

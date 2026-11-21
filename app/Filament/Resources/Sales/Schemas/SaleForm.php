@@ -9,6 +9,7 @@ use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Models\Customer;
 use App\Models\FinancingPlan;
 use App\Models\Product;
+use App\Models\Sale;
 use App\Models\User;
 use App\Services\SaleCalculator;
 use App\Support\Money;
@@ -24,6 +25,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Builder;
 
 class SaleForm
 {
@@ -31,20 +34,35 @@ class SaleForm
     {
         return $schema
             ->components([
+                Section::make('Qué se puede cambiar')
+                    ->icon(Heroicon::OutlinedLockClosed)
+                    ->iconColor('warning')
+                    ->columnSpanFull()
+                    ->visible(fn (string $operation, ?Sale $record): bool => $operation === 'edit' && self::editLockReasons($record) !== [])
+                    ->schema([
+                        TextEntry::make('edit_lock_reasons')->hiddenLabel()
+                            ->state(fn (?Sale $record): array => self::editLockReasons($record))
+                            ->listWithLineBreaks()->bulleted(),
+                    ]),
                 Section::make('Venta')
                     ->columns(3)
                     ->columnSpanFull()
                     ->schema([
                         DatePicker::make('date')->label('Fecha de la venta')->default(now())->required(),
                         Select::make('customer_id')->label('Cliente')
-                            ->options(fn (): array => Customer::query()->where('active', true)->orderBy('name')->pluck('name', 'id')->all())
+                            ->options(fn (?string $state): array => Customer::query()
+                                ->where(fn (Builder $query) => $query->where('active', true)->when(filled($state), fn (Builder $query) => $query->orWhereKey($state)))
+                                ->orderBy('name')->pluck('name', 'id')->all())
                             ->searchable()->required()
+                            ->disabled(fn (?Sale $record): bool => self::termsLocked($record))
                             ->createOptionForm(fn (Schema $schema): Schema => CustomerForm::configure($schema))
                             ->createOptionUsing(fn (array $data): int => Customer::create($data)->getKey())
                             ->createOptionModalHeading('Nuevo cliente')
                             ->createOptionAction(fn (Action $action): Action => $action->modalWidth('3xl')),
                         Select::make('seller_id')->label('Vendedor')
-                            ->options(fn (): array => User::query()->where('active', true)->orderBy('name')->pluck('name', 'id')->all())
+                            ->options(fn (?string $state): array => User::query()
+                                ->where(fn (Builder $query) => $query->where('active', true)->when(filled($state), fn (Builder $query) => $query->orWhereKey($state)))
+                                ->orderBy('name')->pluck('name', 'id')->all())
                             ->default(fn (): ?int => self::defaultSellerId())
                             ->required()->searchable()
                             ->disabled(fn (): bool => (bool) auth()->user()?->isSeller())
@@ -56,9 +74,12 @@ class SaleForm
                         Repeater::make('items')->label('Ítems')
                             ->addActionLabel('Agregar producto')
                             ->minItems(1)->required()->live()->columns(7)->defaultItems(1)
+                            ->disabled(fn (?Sale $record): bool => self::termsLocked($record) || $record?->purchaseOrdersLockReason() !== null)
                             ->schema([
                                 Select::make('product_id')->label('Producto')
-                                    ->options(fn (): array => Product::query()->active()->orderBy('name')->pluck('name', 'id')->all())
+                                    ->options(fn (?string $state): array => Product::query()
+                                        ->where(fn (Builder $query) => $query->active()->when(filled($state), fn (Builder $query) => $query->orWhereKey($state)))
+                                        ->orderBy('name')->pluck('name', 'id')->all())
                                     ->searchable()->required()->live()->columnSpan(2)
                                     ->createOptionForm(fn (Schema $schema): Schema => ProductForm::configure($schema))
                                     ->createOptionUsing(fn (array $data): int => Product::create($data)->getKey())
@@ -88,16 +109,22 @@ class SaleForm
                     ->columnSpanFull()
                     ->schema([
                         Select::make('financing_plan_id')->label('Plan de financiación')
-                            ->options(fn (): array => FinancingPlan::query()->active()->pluck('name', 'id')->all())
-                            ->required()->live(),
+                            ->options(fn (?string $state): array => FinancingPlan::query()
+                                ->where(fn (Builder $query) => $query->active()->when(filled($state), fn (Builder $query) => $query->orWhereKey($state)))
+                                ->pluck('name', 'id')->all())
+                            ->required()->live()
+                            ->disabled(fn (?Sale $record): bool => self::termsLocked($record)),
                         Select::make('first_due_date')->label('Vencimiento de la primera cuota')
-                            ->options(fn (): array => self::firstDueDateOptions())
+                            ->options(fn (?string $state): array => self::firstDueDateOptions($state))
                             ->default(SaleCalculator::dueDateFor(today(), 1)->toDateString())
-                            ->required()->live(),
+                            ->required()->live()
+                            ->disabled(fn (?Sale $record): bool => self::termsLocked($record)),
                         TextInput::make('down_payment')->label('Anticipo')->numeric()->minValue(0)->default(0)->prefix('$')->live(onBlur: true)
-                            ->dehydrateStateUsing(fn ($state) => $state === null || $state === '' ? 0 : $state),
+                            ->dehydrateStateUsing(fn ($state) => $state === null || $state === '' ? 0 : $state)
+                            ->disabled(fn (?Sale $record): bool => self::termsLocked($record)),
                         Select::make('down_payment_method')->label('Medio de pago del anticipo')
-                            ->options(PaymentMethod::class)->default(PaymentMethod::Cash)->required(),
+                            ->options(PaymentMethod::class)->default(PaymentMethod::Cash)->required()
+                            ->disabled(fn (?Sale $record): bool => self::termsLocked($record)),
                     ]),
                 Section::make('Resumen')
                     ->columnSpanFull()
@@ -122,25 +149,59 @@ class SaleForm
     }
 
     /**
-     * El vendedor carga a su nombre; el resto arranca con el vendedor por defecto (o con quien carga).
-     */
-    /**
      * Vencimientos posibles para la primera cuota: el día 30 de cada uno de los próximos 24 meses.
+     * Al editar una venta vieja también se ofrece el vencimiento que ya tenía.
      *
      * @return array<string, string>
      */
-    private static function firstDueDateOptions(): array
+    private static function firstDueDateOptions(?string $current = null): array
     {
-        $options = [];
+        $dueDates = [];
 
         for ($offset = 0; $offset < 24; $offset++) {
-            $dueDate = SaleCalculator::dueDateFor(today(), $offset);
+            $dueDates[] = SaleCalculator::dueDateFor(today(), $offset);
+        }
+
+        if (filled($current)) {
+            $dueDates[] = SaleCalculator::dueDateFor($current);
+        }
+
+        $options = [];
+
+        foreach (collect($dueDates)->sort() as $dueDate) {
             $options[$dueDate->toDateString()] = $dueDate->format('d/m/Y').' ('.ucfirst($dueDate->locale('es')->translatedFormat('F Y')).')';
         }
 
         return $options;
     }
 
+    /**
+     * Al editar, el cliente, el plan, el anticipo y los vencimientos quedan fijos si las cuotas
+     * tienen cobros imputados.
+     */
+    private static function termsLocked(?Sale $record): bool
+    {
+        return $record !== null && $record->installmentPaymentsLockReason() !== null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function editLockReasons(?Sale $record): array
+    {
+        if ($record === null) {
+            return [];
+        }
+
+        return array_values(array_filter([
+            $record->installmentPaymentsLockReason(),
+            $record->purchaseOrdersLockReason(),
+        ]));
+    }
+
+    /**
+     * El vendedor carga a su nombre; el resto arranca con el vendedor por defecto (o con quien carga).
+     */
     private static function defaultSellerId(): ?int
     {
         $user = auth()->user();

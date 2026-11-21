@@ -66,6 +66,13 @@ class ActivityLabels
         'items' => 'Ítems',
         'installments' => 'Cuotas imputadas',
         'seller_id' => 'Vendedor (ID)',
+        'can_edit_sales' => 'Puede editar ventas',
+        'customer' => 'Cliente',
+        'seller' => 'Vendedor',
+        'date' => 'Fecha',
+        'financing_plan' => 'Plan de financiación',
+        'first_due_date' => 'Primer vencimiento',
+        'down_payment_method' => 'Medio de pago del anticipo',
     ];
 
     /**

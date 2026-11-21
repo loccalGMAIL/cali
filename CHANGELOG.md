@@ -13,6 +13,24 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.8.0] - 2026-11-21
+
+Requiere migración (`php artisan migrate`): agrega la columna `can_edit_sales` a `users`.
+
+### Agregado
+- **Edición de ventas** confirmadas, conservando el número `V-xxxxx`. Solo para usuarios con el
+  permiso nuevo **Puede editar ventas** (se habilita desde la ficha de cada usuario; arranca
+  deshabilitado para todos). Un vendedor con el permiso solo edita sus propias ventas y no puede
+  pasárselas a otro vendedor. Las ventas anuladas no se editan.
+- Vendedor, fecha y notas se cambian siempre. Al cambiar la fecha también se mueven la del
+  anticipo y la de los movimientos de la venta en la cuenta corriente.
+- Cliente, productos, plan, anticipo y vencimientos rearman la venta como si se cargara de nuevo:
+  se recalculan totales y cuotas, se revierte el importe anterior en la cuenta corriente y se
+  registra el nuevo, y si cambia el anticipo el anterior se anula y se registra otro cobro. No se
+  puede si las cuotas tienen cobros imputados (hay que anularlos primero), y los productos tampoco
+  si ya están en una orden de compra no anulada. El formulario bloquea esos campos y explica por qué.
+- Cada edición queda en el registro de actividad con lo que cambió (antes y después).
+
 ## [0.7.0] - 2026-11-12
 
 No requiere migración.
@@ -242,7 +260,8 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.7.0...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/loccalGMAIL/cali/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/loccalGMAIL/cali/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/loccalGMAIL/cali/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/loccalGMAIL/cali/compare/v0.5.0...v0.6.0
