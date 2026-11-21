@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Payments\Tables;
 
 use App\Enums\PaymentMethod;
 use App\Filament\Resources\Payments\Actions\CancelPaymentAction;
+use App\Filament\Resources\Payments\Actions\DownloadReceiptAction;
 use App\Models\Payment;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -45,6 +46,7 @@ class PaymentsTable
             ])
             ->recordActions([
                 ViewAction::make()->label('Ver'),
+                DownloadReceiptAction::make(),
                 CancelPaymentAction::make(),
             ]);
     }

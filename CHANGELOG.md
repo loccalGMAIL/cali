@@ -13,6 +13,22 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+Requiere `composer install` (nueva dependencia `barryvdh/laravel-dompdf`) y migración
+(`php artisan migrate`): agrega la tabla `settings`. Para ver el logo en el panel hace falta
+`php artisan storage:link`.
+
+### Agregado
+- **Comprobante de pago en PDF** (A4) para cada cobro, con la leyenda "Comprobante no válido como
+  factura". Muestra cliente, fecha, medio de pago, monto recibido y, por cada venta, los productos,
+  las cuotas a las que se imputó (marcando los pagos parciales) y cuántas cuotas quedan pendientes.
+  No muestra saldos ni el total adeudado. Las cuotas pendientes se calculan a la fecha del cobro:
+  reimprimir el comprobante más adelante da siempre lo mismo. Los anticipos también tienen
+  comprobante, y el de un cobro anulado sale marcado como ANULADO.
+- Se descarga desde el detalle del cobro, desde la tabla de cobros y desde la notificación que
+  aparece al registrar un cobro.
+- **Configuración → Datos del negocio**: nombre o razón social, CUIT, domicilio, teléfono, email y
+  logo, y la opción de mostrarlos o no en el encabezado del comprobante. Solo para administradores.
+
 ## [0.8.0] - 2026-11-21
 
 Requiere migración (`php artisan migrate`): agrega la columna `can_edit_sales` a `users`.
