@@ -1,8 +1,11 @@
 <?php
 
+use App\Actions\CreateSale as CreateSaleAction;
 use App\Actions\RegisterPayment;
+use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
 use App\Filament\Resources\Sales\Pages\CreateSale;
+use App\Filament\Resources\Sales\Pages\EditSale;
 use App\Filament\Resources\Sales\Pages\ListSales;
 use App\Filament\Resources\Sales\Pages\ViewSale;
 use App\Filament\Resources\Sales\SaleResource;
@@ -136,12 +139,109 @@ it('el admin ve todas las ventas y su detalle', function () {
     Livewire::test(ViewSale::class, ['record' => $sale->getKey()])->assertSuccessful();
 });
 
-it('no permite editar ni borrar ventas confirmadas', function () {
+it('sin el permiso no se editan ventas, aunque sea admin, y nunca se borran', function () {
     $this->actingAs(User::factory()->admin()->create());
     $sale = Sale::factory()->create();
 
     expect(SaleResource::canEdit($sale))->toBeFalse()
         ->and(SaleResource::canDelete($sale))->toBeFalse();
+
+    $this->get(SaleResource::getUrl('edit', ['record' => $sale]))->assertForbidden();
+});
+
+it('con el permiso el admin edita cualquier venta vigente pero no las anuladas', function () {
+    $this->actingAs(User::factory()->admin()->canEditSales()->create());
+
+    expect(SaleResource::canEdit(Sale::factory()->create()))->toBeTrue()
+        ->and(SaleResource::canEdit(Sale::factory()->create(['status' => SaleStatus::Cancelled])))->toBeFalse()
+        ->and(SaleResource::canDelete(Sale::factory()->create()))->toBeFalse();
+});
+
+it('con el permiso el vendedor edita solo sus ventas', function () {
+    $seller = User::factory()->seller()->canEditSales()->create();
+    $this->actingAs($seller);
+
+    expect(SaleResource::canEdit(Sale::factory()->create(['seller_id' => $seller->id])))->toBeTrue()
+        ->and(SaleResource::canEdit(Sale::factory()->create()))->toBeFalse();
+});
+
+it('edita una venta desde el panel y vuelve al detalle', function () {
+    $admin = User::factory()->admin()->canEditSales()->create();
+    $this->actingAs($admin);
+    $sale = app(CreateSaleAction::class)->handle([
+        'customer_id' => $this->customer->id,
+        'seller_id' => $admin->id,
+        'financing_plan_id' => $this->plan->id,
+        'date' => '2026-11-07',
+        'first_due_date' => '2026-12-30',
+        'down_payment' => 200,
+    ], [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 500]], $admin);
+
+    Livewire::test(EditSale::class, ['record' => $sale->getKey()])
+        ->assertSchemaStateSet([
+            'customer_id' => $this->customer->id,
+            'financing_plan_id' => $this->plan->id,
+            'first_due_date' => '2026-12-30',
+            'down_payment_method' => PaymentMethod::Cash,
+        ])
+        ->fillForm([
+            'down_payment' => 500,
+            'notes' => 'Ajuste de anticipo',
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors()
+        ->assertRedirect(SaleResource::getUrl('view', ['record' => $sale]));
+
+    // (1100 − 500) ÷ 3 = 200
+    $sale->refresh();
+    expect($sale->down_payment)->toBe('500.00')
+        ->and($sale->notes)->toBe('Ajuste de anticipo')
+        ->and($sale->installments->pluck('amount')->all())->toBe(['200.00', '200.00', '200.00']);
+});
+
+it('con cobros imputados el formulario bloquea las condiciones y explica por qué', function () {
+    $admin = User::factory()->admin()->canEditSales()->create();
+    $this->actingAs($admin);
+    $sale = app(CreateSaleAction::class)->handle([
+        'customer_id' => $this->customer->id,
+        'seller_id' => $admin->id,
+        'financing_plan_id' => $this->plan->id,
+        'date' => '2026-11-07',
+        'first_due_date' => '2026-12-30',
+    ], [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 300]], $admin);
+    $payment = app(RegisterPayment::class)->handle(['customer_id' => $this->customer->id, 'amount' => 300], $admin);
+
+    Livewire::test(EditSale::class, ['record' => $sale->getKey()])
+        ->assertSee($payment->number())
+        ->assertFormFieldDisabled('down_payment')
+        ->assertFormFieldDisabled('customer_id')
+        ->assertFormFieldDisabled('items')
+        ->assertFormFieldEnabled('notes')
+        ->fillForm(['notes' => 'Solo la nota'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($sale->fresh()->notes)->toBe('Solo la nota')
+        ->and($sale->fresh()->installments->pluck('paid_amount')->first())->toBe('300.00');
+});
+
+it('el vendedor no puede pasarle su venta a otro al editarla', function () {
+    $seller = User::factory()->seller()->canEditSales()->create();
+    $other = User::factory()->seller()->create();
+    $this->actingAs($seller);
+    $sale = app(CreateSaleAction::class)->handle([
+        'customer_id' => $this->customer->id,
+        'seller_id' => $seller->id,
+        'financing_plan_id' => $this->plan->id,
+        'date' => '2026-11-07',
+        'first_due_date' => '2026-12-30',
+    ], [['product_id' => $this->product->id, 'quantity' => 1, 'unit_cost' => 600, 'unit_margin' => 300]], $seller);
+
+    Livewire::test(EditSale::class, ['record' => $sale->getKey()])
+        ->fillForm(['seller_id' => $other->id, 'notes' => 'x'])
+        ->call('save');
+
+    expect($sale->fresh()->seller_id)->toBe($seller->id);
 });
 
 it('la vista previa muestra total, cuota y cronograma', function () {
@@ -196,7 +296,7 @@ it('anula una venta desde la tabla y la saca de pendientes de compra', function 
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin);
 
-    $sale = app(App\Actions\CreateSale::class)->handle([
+    $sale = app(CreateSaleAction::class)->handle([
         'customer_id' => $this->customer->id,
         'seller_id' => $admin->id,
         'financing_plan_id' => $this->plan->id,
@@ -241,7 +341,7 @@ it('avisa en pantalla si la venta tiene cobros imputados', function () {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin);
 
-    $sale = app(App\Actions\CreateSale::class)->handle([
+    $sale = app(CreateSaleAction::class)->handle([
         'customer_id' => $this->customer->id,
         'seller_id' => $admin->id,
         'financing_plan_id' => $this->plan->id,

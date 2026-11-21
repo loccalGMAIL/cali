@@ -13,6 +13,22 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+Requiere migración (`php artisan migrate`): agrega la columna `can_edit_sales` a `users`.
+
+### Agregado
+- **Edición de ventas** confirmadas, conservando el número `V-xxxxx`. Solo para usuarios con el
+  permiso nuevo **Puede editar ventas** (se habilita desde la ficha de cada usuario; arranca
+  deshabilitado para todos). Un vendedor con el permiso solo edita sus propias ventas y no puede
+  pasárselas a otro vendedor. Las ventas anuladas no se editan.
+- Vendedor, fecha y notas se cambian siempre. Al cambiar la fecha también se mueven la del
+  anticipo y la de los movimientos de la venta en la cuenta corriente.
+- Cliente, productos, plan, anticipo y vencimientos rearman la venta como si se cargara de nuevo:
+  se recalculan totales y cuotas, se revierte el importe anterior en la cuenta corriente y se
+  registra el nuevo, y si cambia el anticipo el anterior se anula y se registra otro cobro. No se
+  puede si las cuotas tienen cobros imputados (hay que anularlos primero), y los productos tampoco
+  si ya están en una orden de compra no anulada. El formulario bloquea esos campos y explica por qué.
+- Cada edición queda en el registro de actividad con lo que cambió (antes y después).
+
 ## [0.7.0] - 2026-11-12
 
 No requiere migración.
