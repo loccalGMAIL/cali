@@ -3,7 +3,11 @@
 namespace App\Filament\Resources\Payments\Pages;
 
 use App\Actions\RegisterPayment;
+use App\Filament\Resources\Payments\Actions\DownloadReceiptAction;
 use App\Filament\Resources\Payments\PaymentResource;
+use App\Models\Payment;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
@@ -30,5 +34,23 @@ class CreatePayment extends CreateRecord
                 collect($exception->errors())->mapWithKeys(fn (array $messages, string $key): array => ["data.{$key}" => $messages])->all(),
             );
         }
+    }
+
+    /**
+     * Al registrar el cobro se ofrece el comprobante para entregarle al cliente.
+     */
+    protected function getCreatedNotification(): ?Notification
+    {
+        /** @var Payment $payment */
+        $payment = $this->getRecord();
+
+        return parent::getCreatedNotification()
+            ?->body("Cobro {$payment->number()} registrado.")
+            ->actions([
+                Action::make('receipt')->label('Descargar comprobante')
+                    ->url(DownloadReceiptAction::url($payment))
+                    ->openUrlInNewTab(),
+            ])
+            ->persistent();
     }
 }

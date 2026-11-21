@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
+use App\Http\Controllers\PaymentReceiptController;
 use App\Http\Controllers\PrintPurchaseOrderController;
 use App\Http\Controllers\PrintReportController;
 use Filament\Http\Middleware\Authenticate;
@@ -74,6 +75,8 @@ class AdminPanelProvider extends PanelProvider
                     ->name('purchase-orders.print');
                 Route::get('reports/{report}/print', PrintReportController::class)
                     ->name('reports.print');
+                Route::get('payments/{payment}/receipt', PaymentReceiptController::class)
+                    ->name('payments.receipt');
             });
     }
 }
