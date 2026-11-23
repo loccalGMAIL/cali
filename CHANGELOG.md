@@ -13,6 +13,16 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.8.4] - 2026-11-23
+
+Al actualizar un servidor que ya tiene el sistema, antes del `git pull` hay que descartar una única
+vez los archivos de caché locales: `git checkout -- bootstrap/cache/packages.php bootstrap/cache/services.php`.
+
+### Corregido
+- Los archivos `bootstrap/cache/packages.php` y `services.php` dejan de estar versionados: son caché
+  que Laravel regenera en cada `composer install`, y al diferir entre entornos (por ejemplo con
+  `--no-dev`) hacían fallar el `git pull` en el servidor. Ahora `bootstrap/cache` se ignora.
+
 ## [0.8.3] - 2026-11-23
 
 Requiere recompilar los assets (`npm run build`); los compilados ya van en el repositorio.
@@ -305,7 +315,8 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.8.3...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.8.4...HEAD
+[0.8.4]: https://github.com/loccalGMAIL/cali/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/loccalGMAIL/cali/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/loccalGMAIL/cali/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/loccalGMAIL/cali/compare/v0.8.0...v0.8.1
