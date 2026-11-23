@@ -292,3 +292,68 @@
         content: none;
     }
 }
+
+/* Cobros: cuotas pendientes agrupadas por venta; solo la primera a la vista, el resto desplegable. */
+.cali-installment-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.cali-installment-sale {
+    padding: 0.375rem 0.625rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.dark .cali-installment-sale {
+    border-color: rgb(255 255 255 / 0.1);
+}
+
+.cali-installment-sale-title {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+}
+
+.cali-installment-sale-products {
+    color: #6b7280;
+}
+
+.dark .cali-installment-sale-products {
+    color: #9ca3af;
+}
+
+.cali-installment-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.125rem 0;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    cursor: pointer;
+}
+
+.cali-installment-row > input {
+    margin-top: 0.25rem;
+}
+
+.cali-installment-row-title {
+    font-weight: 500;
+}
+
+.cali-installment-row-detail {
+    display: block;
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+.dark .cali-installment-row-detail {
+    color: #9ca3af;
+}
+
+.cali-installment-more > summary {
+    padding: 0.125rem 0;
+    font-size: 0.75rem;
+    color: #6b7280;
+    cursor: pointer;
+}

@@ -13,6 +13,18 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.8.3] - 2026-11-23
+
+Requiere recompilar los assets (`npm run build`); los compilados ya van en el repositorio.
+
+### Cambiado
+- **Cobros: cuotas agrupadas por venta**. En el formulario de cobro, cada venta se muestra con su
+  número (`V-00012`, sin la palabra "Venta") y sus productos. De cada venta se ve solo la primera
+  cuota pendiente para tildarla rápido; las demás quedan bajo "N cuotas más", desplegable (se abre
+  sola si hay una elegida). La tabla "Se imputa a" también usa solo el número de venta.
+- Se reemplazó "seleccionar todo" de la lista de cuotas por el botón **Elegir todas**, junto a
+  **Elegir las vencidas**.
+
 ## [0.8.2] - 2026-11-23
 
 Requiere recompilar los assets (`npm run build`); los compilados ya van en el repositorio.
@@ -293,7 +305,8 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.8.2...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.8.3...HEAD
+[0.8.3]: https://github.com/loccalGMAIL/cali/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/loccalGMAIL/cali/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/loccalGMAIL/cali/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/loccalGMAIL/cali/compare/v0.7.0...v0.8.0
