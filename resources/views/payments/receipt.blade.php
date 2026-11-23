@@ -10,7 +10,7 @@
         body { margin: 0; color: #111827; font-family: "DejaVu Sans", sans-serif; font-size: 11px; line-height: 1.45; }
         table { width: 100%; border-collapse: collapse; }
         .header td { vertical-align: top; }
-        .header { border-bottom: 2px solid #111827; margin-bottom: 14px; }
+        .header { border-bottom: 2px solid #111827; margin-bottom: 18px; }
         .header .logo { width: 96px; padding: 0 14px 12px 0; }
         .header .logo img { max-width: 96px; max-height: 72px; }
         .header .business { padding-bottom: 12px; }
@@ -18,7 +18,6 @@
         .header .title { text-align: right; padding-bottom: 12px; white-space: nowrap; }
         .header .title h1 { margin: 0 0 2px; font-size: 16px; letter-spacing: .04em; text-transform: uppercase; }
         .muted { color: #4b5563; }
-        .legend { border: 1px solid #111827; padding: 5px 8px; margin-bottom: 16px; text-align: center; font-weight: bold; text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
         .facts td { padding: 3px 0; }
         .facts .label { width: 120px; font-weight: bold; }
         .amount { font-size: 15px; font-weight: bold; }
@@ -69,8 +68,6 @@
         </td>
     </tr>
 </table>
-
-<div class="legend">Comprobante no válido como factura</div>
 
 @if ($receipt['is_cancelled'])
     <div class="cancelled-note">Este cobro fue anulado.</div>

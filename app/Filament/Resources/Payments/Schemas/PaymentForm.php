@@ -3,12 +3,12 @@
 namespace App\Filament\Resources\Payments\Schemas;
 
 use App\Enums\PaymentMethod;
+use App\Filament\Forms\Components\InstallmentPicker;
 use App\Models\Customer;
 use App\Models\Installment;
 use App\Support\Money;
 use App\Support\PaymentPreview;
 use Filament\Actions\Action;
-use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -48,22 +48,27 @@ class PaymentForm
                         TextEntry::make('debt_preview')->hiddenLabel()
                             ->state(fn (Get $get) => PaymentPreview::debt($get('customer_id')))
                             ->html(),
-                        CheckboxList::make('installment_ids')->label('Cuotas a imputar')
-                            ->options(fn (Get $get): array => PaymentPreview::options($get('customer_id')))
-                            ->descriptions(fn (Get $get): array => PaymentPreview::descriptions($get('customer_id')))
-                            ->bulkToggleable()
-                            ->columns(1)
+                        InstallmentPicker::make('installment_ids')->label('Cuotas a imputar')
                             ->live()
                             ->default(fn (): array => request()->filled('installment') ? [(string) request()->integer('installment')] : [])
                             ->hidden(fn (Get $get): bool => PaymentPreview::options($get('customer_id')) === [])
                             ->afterStateUpdated(fn (Get $get, Set $set, ?array $state) => self::syncAmount($get, $set, $state ?? []))
-                            ->hintAction(fn (): Action => Action::make('selectOverdue')
-                                ->label('Elegir las vencidas')
-                                ->action(function (Get $get, Set $set): void {
-                                    $ids = PaymentPreview::overdueIds($get('customer_id'));
-                                    $set('installment_ids', $ids);
-                                    self::syncAmount($get, $set, $ids);
-                                })),
+                            ->hintActions([
+                                Action::make('selectOverdue')
+                                    ->label('Elegir las vencidas')
+                                    ->action(function (Get $get, Set $set): void {
+                                        $ids = PaymentPreview::overdueIds($get('customer_id'));
+                                        $set('installment_ids', $ids);
+                                        self::syncAmount($get, $set, $ids);
+                                    }),
+                                Action::make('selectAll')
+                                    ->label('Elegir todas')
+                                    ->action(function (Get $get, Set $set): void {
+                                        $ids = array_map('strval', array_keys(PaymentPreview::options($get('customer_id'))));
+                                        $set('installment_ids', $ids);
+                                        self::syncAmount($get, $set, $ids);
+                                    }),
+                            ]),
                     ]),
                 Section::make('Cobro')
                     ->columns(3)

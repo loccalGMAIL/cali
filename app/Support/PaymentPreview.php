@@ -56,8 +56,40 @@ class PaymentPreview
     {
         return self::pending($customerId)
             ->mapWithKeys(fn (Installment $installment): array => [
-                $installment->getKey() => 'Venta '.Sale::numberFor($installment->sale_id).' · cuota '.$installment->number.' de '.$installment->sale->installments_count,
+                $installment->getKey() => Sale::numberFor($installment->sale_id).' · cuota '.$installment->number.' de '.$installment->sale->installments_count,
             ])
+            ->all();
+    }
+
+    /**
+     * Las cuotas pendientes agrupadas por venta, para elegirlas: cada venta con su número, sus
+     * productos y sus cuotas de la más vieja a la más nueva. Las ventas salen en el orden de su
+     * cuota más vieja.
+     *
+     * @return list<array{sale_id: int, number: string, products: string, installments: list<array{id: int, number: int, total: int, description: string}>}>
+     */
+    public static function groups(mixed $customerId): array
+    {
+        $descriptions = self::descriptions($customerId);
+
+        return self::pending($customerId)
+            ->groupBy('sale_id')
+            ->map(fn (Collection $installments, int|string $saleId): array => [
+                'sale_id' => (int) $saleId,
+                'number' => Sale::numberFor($saleId),
+                'products' => $installments->first()->sale->items
+                    ->map(fn ($item): ?string => $item->product?->name)
+                    ->filter()
+                    ->unique()
+                    ->implode(', '),
+                'installments' => $installments->map(fn (Installment $installment): array => [
+                    'id' => $installment->getKey(),
+                    'number' => $installment->number,
+                    'total' => $installment->sale->installments_count,
+                    'description' => $descriptions[$installment->getKey()],
+                ])->values()->all(),
+            ])
+            ->values()
             ->all();
     }
 
@@ -140,7 +172,7 @@ class PaymentPreview
             $state = bccomp($allocation['remaining'], '0', 2) === 0 ? 'queda pagada' : 'queda con saldo '.Money::format($allocation['remaining']);
 
             return '<tr>'
-                .'<td style="padding:2px 12px 2px 0">Venta #'.$installment->sale_id.' · cuota '.$installment->number.'</td>'
+                .'<td style="padding:2px 12px 2px 0">'.Sale::numberFor($installment->sale_id).' · cuota '.$installment->number.'</td>'
                 .'<td style="padding:2px 12px; text-align:right">'.Money::format($allocation['applied']).'</td>'
                 .'<td style="padding:2px 0 2px 12px">'.e($state).'</td>'
                 .'</tr>';
@@ -173,7 +205,7 @@ class PaymentPreview
         return Installment::query()
             ->where('customer_id', $customerId)
             ->unpaid()
-            ->with('sale:id,installments_count')
+            ->with(['sale:id,installments_count', 'sale.items.product:id,name'])
             ->orderBy('due_date')
             ->orderBy('id')
             ->get();

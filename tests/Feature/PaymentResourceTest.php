@@ -280,7 +280,7 @@ it('las cuotas para elegir muestran vencimiento, atraso y saldo, de la más viej
     $descriptions = PaymentPreview::descriptions($this->customer->id);
 
     expect(array_keys($options))->toBe($ids)
-        ->and($options[$ids[0]])->toBe("Venta {$this->sale->number()} · cuota 1 de 3")
+        ->and($options[$ids[0]])->toBe("{$this->sale->number()} · cuota 1 de 3")
         ->and($descriptions[$ids[0]])->toContain('VENCIDA hace 7 días')->toContain('$ 400,00')
         ->and($descriptions[$ids[1]])->not->toContain('VENCIDA');
 });
@@ -302,4 +302,38 @@ it('la imputación de la vista previa respeta las cuotas elegidas y avisa si se 
 
     expect($chosen)->toContain('cuota 3')->not->toContain('cuota 1')
         ->and($tooMuch)->toContain('supera el saldo de las cuotas elegidas')->toContain('400,00');
+});
+
+it('agrupa las cuotas pendientes por venta, con su número y su producto', function () {
+    $groups = PaymentPreview::groups($this->customer->id);
+    $productName = $this->sale->items()->with('product')->first()->product->name;
+
+    expect($groups)->toHaveCount(1)
+        ->and($groups[0]['number'])->toBe($this->sale->number())
+        ->and($groups[0]['products'])->toBe($productName)
+        ->and(array_column($groups[0]['installments'], 'number'))->toBe([1, 2, 3])
+        ->and($groups[0]['installments'][0]['total'])->toBe(3)
+        ->and(PaymentPreview::groups(null))->toBe([]);
+});
+
+it('el formulario de cobro muestra la venta por su número y solo la primera cuota a la vista', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(CreatePayment::class)
+        ->fillForm(['customer_id' => $this->customer->id])
+        ->assertSeeHtml('cali-installment-more')
+        ->assertSee($this->sale->number())
+        ->assertSee('2 cuotas más')
+        ->assertDontSee('Venta '.$this->sale->number());
+});
+
+it('elige todas las cuotas pendientes desde el formulario de cobro', function () {
+    $this->actingAs($this->admin);
+
+    $component = Livewire::test(CreatePayment::class)
+        ->fillForm(['customer_id' => $this->customer->id])
+        ->callAction(TestAction::make('selectAll')->schemaComponent('installment_ids'));
+
+    expect(array_map('intval', $component->get('data.installment_ids')))->toBe($this->sale->installments()->pluck('id')->all())
+        ->and((float) $component->get('data.amount'))->toBe(1200.0);
 });

@@ -194,3 +194,166 @@
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
+
+/*
+ * Tablas del panel como cards en pantallas chicas (< 768px). Las etiquetas de cada dato
+ * salen del encabezado de la columna: las copia a `data-label` el script de
+ * resources/views/filament/admin/table-cards.blade.php.
+ */
+@media (max-width: 47.999rem) {
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) {
+        display: block;
+    }
+
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > thead {
+        display: none;
+    }
+
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records {
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+        padding: 0.625rem;
+    }
+
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr {
+        position: relative;
+        display: block;
+        padding: 0.25rem 0;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: #fff;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+
+    .dark .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr {
+        border-color: rgb(255 255 255 / 0.1);
+        background: rgb(255 255 255 / 0.04);
+    }
+
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr > .fi-ta-cell {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.125rem 0.5rem !important;
+        text-align: end;
+    }
+
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr > .fi-ta-cell::before {
+        content: attr(data-label);
+        flex: none;
+        max-width: 40%;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-align: start;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+
+    .dark .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr > .fi-ta-cell::before {
+        color: #9ca3af;
+    }
+
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr > .fi-ta-cell[data-empty] {
+        display: none;
+    }
+
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr > .fi-ta-cell > * {
+        min-width: 0;
+        padding-inline: 0 !important;
+    }
+
+    /* Acciones del registro: sin etiqueta, alineadas a la derecha y separadas de los datos. */
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr > .fi-ta-actions-cell {
+        justify-content: flex-end;
+        margin-top: 0.25rem;
+        padding-top: 0.375rem !important;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .dark .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr > .fi-ta-actions-cell {
+        border-top-color: rgb(255 255 255 / 0.1);
+    }
+
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr > .fi-ta-actions-cell::before {
+        content: none;
+    }
+
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr > .fi-ta-selection-cell {
+        position: absolute;
+        top: 0.25rem;
+        inset-inline-end: 0.25rem;
+        padding: 0 !important;
+    }
+
+    .fi-ta-table:not(.fi-ta-table-stacked-on-mobile) > .fi-ta-records > tr > .fi-ta-selection-cell::before {
+        content: none;
+    }
+}
+
+/* Cobros: cuotas pendientes agrupadas por venta; solo la primera a la vista, el resto desplegable. */
+.cali-installment-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.cali-installment-sale {
+    padding: 0.375rem 0.625rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.dark .cali-installment-sale {
+    border-color: rgb(255 255 255 / 0.1);
+}
+
+.cali-installment-sale-title {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+}
+
+.cali-installment-sale-products {
+    color: #6b7280;
+}
+
+.dark .cali-installment-sale-products {
+    color: #9ca3af;
+}
+
+.cali-installment-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.125rem 0;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    cursor: pointer;
+}
+
+.cali-installment-row > input {
+    margin-top: 0.25rem;
+}
+
+.cali-installment-row-title {
+    font-weight: 500;
+}
+
+.cali-installment-row-detail {
+    display: block;
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+.dark .cali-installment-row-detail {
+    color: #9ca3af;
+}
+
+.cali-installment-more > summary {
+    padding: 0.125rem 0;
+    font-size: 0.75rem;
+    color: #6b7280;
+    cursor: pointer;
+}
