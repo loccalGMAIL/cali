@@ -11,11 +11,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
  * @property PaymentMethod $method
  * @property string $amount
+ * @property Carbon $date
  */
 #[Fillable(['customer_id', 'sale_id', 'date', 'amount', 'method', 'collected_by', 'notes', 'cancelled_at', 'cancelled_by', 'cancellation_reason'])]
 class Payment extends Model

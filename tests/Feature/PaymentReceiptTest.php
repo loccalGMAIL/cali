@@ -2,7 +2,10 @@
 
 use App\Actions\CancelPayment;
 use App\Actions\RegisterPayment;
+use App\Filament\Resources\Payments\Actions\SendReceiptByWhatsAppAction;
+use App\Filament\Resources\Payments\Actions\ShareReceiptAction;
 use App\Filament\Resources\Payments\Pages\CreatePayment;
+use App\Filament\Resources\Payments\Pages\ListPayments;
 use App\Filament\Resources\Payments\Pages\ViewPayment;
 use App\Models\Customer;
 use App\Models\Payment;
@@ -11,6 +14,7 @@ use App\Models\User;
 use App\Services\BusinessSettings;
 use App\Services\PaymentReceipt;
 use Filament\Actions\Action;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Livewire\Livewire;
@@ -190,7 +194,8 @@ it('ofrece el comprobante en el detalle del cobro', function () {
         ->assertActionHasUrl('receipt', route('filament.admin.payments.receipt', $payment));
 });
 
-it('al registrar un cobro ofrece descargar el comprobante', function () {
+it('al registrar un cobro ofrece descargar el comprobante, mandarlo por WhatsApp o compartirlo', function () {
+    $this->freezeTime();
     $this->actingAs($this->admin);
 
     Livewire::test(CreatePayment::class)
@@ -208,7 +213,76 @@ it('al registrar un cobro ofrece descargar el comprobante', function () {
                 Action::make('receipt')->label('Descargar comprobante')
                     ->url(route('filament.admin.payments.receipt', $payment))
                     ->openUrlInNewTab(),
+                Action::make('whatsapp')->label('Enviar por WhatsApp')
+                    ->url(SendReceiptByWhatsAppAction::url($payment))
+                    ->openUrlInNewTab(),
+                Action::make('share')->label('Compartir PDF')
+                    ->alpineClickHandler(ShareReceiptAction::clickHandler($payment)),
             ])
             ->persistent(),
     );
+});
+
+it('el cliente abre el comprobante desde el enlace firmado, sin usuario', function () {
+    $payment = ($this->pay)(500);
+
+    $response = $this->get(PaymentReceipt::sharedUrl($payment))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf')
+        ->assertHeader('Content-Disposition', 'inline; filename=comprobante-'.$payment->number().'.pdf');
+
+    expect($response->getContent())->toStartWith('%PDF');
+});
+
+it('el enlace al comprobante no sirve sin firma, con otro cobro ni vencido', function () {
+    $payment = ($this->pay)(500);
+    $other = ($this->pay)(400);
+    $url = PaymentReceipt::sharedUrl($payment);
+
+    $this->get(route('payments.receipt.shared', $payment))->assertForbidden();
+    $this->get(str_replace("/comprobante/{$payment->id}?", "/comprobante/{$other->id}?", $url))->assertForbidden();
+
+    $this->travel(config('cali.shared_receipt_days') + 1)->days();
+
+    $this->get($url)->assertForbidden();
+});
+
+it('arma el mensaje de WhatsApp al celular del cliente con el enlace al comprobante', function () {
+    $this->freezeTime();
+    $this->customer->update(['phone' => '0351 15-555-1234']);
+    app(BusinessSettings::class)->save(['business_name' => 'Cali Hogar']);
+    $payment = ($this->pay)(500);
+
+    $url = SendReceiptByWhatsAppAction::url($payment->fresh());
+
+    expect($url)->toStartWith('https://wa.me/5493515551234?text=')
+        ->and(rawurldecode(str($url)->after('?text=')->toString()))->toBe(
+            "Hola Juan Pérez, te enviamos el comprobante {$payment->number()} de tu pago de $ 500,00 del 21/11/2026:\n"
+            .PaymentReceipt::sharedUrl($payment)."\n"
+            .'¡Gracias! Cali Hogar',
+        );
+});
+
+it('ofrece mandar y compartir el comprobante desde el detalle y la tabla de cobros', function () {
+    $payment = ($this->pay)(500);
+    $this->actingAs($this->admin);
+
+    Livewire::test(ViewPayment::class, ['record' => $payment->getRouteKey()])
+        ->assertActionVisible('whatsapp')
+        ->assertActionVisible('share');
+
+    Livewire::test(ListPayments::class)
+        ->assertActionVisible(TestAction::make('whatsapp')->table($payment))
+        ->assertActionVisible(TestAction::make('share')->table($payment));
+});
+
+it('no ofrece mandar el comprobante de un cobro anulado', function () {
+    $payment = ($this->pay)(500);
+    app(CancelPayment::class)->handle($payment, 'Error de carga', $this->admin);
+    $this->actingAs($this->admin);
+
+    Livewire::test(ViewPayment::class, ['record' => $payment->getRouteKey()])
+        ->assertActionVisible('receipt')
+        ->assertActionHidden('whatsapp')
+        ->assertActionHidden('share');
 });

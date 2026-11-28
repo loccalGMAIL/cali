@@ -13,6 +13,26 @@ configuración y el tag de git (`vX.Y.Z`).
 
 ## [Sin publicar]
 
+## [0.9.0] - 2026-11-28
+
+No requiere migración. El enlace que se manda por WhatsApp usa el dominio del panel
+(`PANEL_DOMAIN`), así que ese dominio tiene que ser accesible desde internet con HTTPS. Se puede
+cambiar cuántos días dura el enlace con `SHARED_RECEIPT_DAYS` (30 por defecto).
+
+### Agregado
+- **Enviar el comprobante por WhatsApp**: abre WhatsApp con el chat del cliente y un mensaje con el
+  número de cobro, el monto, la fecha y un enlace al PDF. El cliente abre el comprobante desde el
+  enlace sin usuario; el enlace va firmado (no sirve para ver otros cobros) y vence a los 30 días.
+  WhatsApp no deja adjuntar archivos desde un enlace, por eso se manda el link y no el PDF.
+- El teléfono del cliente se pasa solo al formato de WhatsApp (`549` + característica + número,
+  sin 0 ni 15). Si no se puede interpretar (por ejemplo, le falta la característica), WhatsApp se
+  abre igual y pide elegir el contacto; el botón lo avisa en su tooltip.
+- **Compartir PDF**: abre el menú de compartir del celular con el archivo del comprobante, para
+  mandarlo adjunto por WhatsApp (el contacto se elige ahí). En navegadores que no permiten
+  compartir archivos (la mayoría en PC) avisa que se use el botón WhatsApp o la descarga.
+- Los dos botones están en el detalle del cobro, en la tabla de cobros y en la notificación que
+  aparece al registrar un cobro. No se ofrecen en los cobros anulados.
+
 ## [0.8.4] - 2026-11-23
 
 Al actualizar un servidor que ya tiene el sistema, antes del `git pull` hay que descartar una única
@@ -315,7 +335,8 @@ Primera versión: el panel web de administración completo (etapa 1).
 - Modificar el recargo en una venta puntual.
 - Importación de datos desde el Excel actual.
 
-[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.8.4...HEAD
+[Sin publicar]: https://github.com/loccalGMAIL/cali/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/loccalGMAIL/cali/compare/v0.8.4...v0.9.0
 [0.8.4]: https://github.com/loccalGMAIL/cali/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/loccalGMAIL/cali/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/loccalGMAIL/cali/compare/v0.8.1...v0.8.2
