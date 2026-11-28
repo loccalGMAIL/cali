@@ -6,9 +6,12 @@ use App\Models\Installment;
 use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\PDF as Document;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\URL;
 
 /**
  * Arma los datos del comprobante de un cobro: a qué cuotas de qué venta se imputó y cuántas cuotas
@@ -34,6 +37,47 @@ use Illuminate\Support\Collection;
  */
 class PaymentReceipt
 {
+    public function __construct(private BusinessSettings $settings) {}
+
+    /**
+     * El comprobante en PDF (A4), con el encabezado del negocio si está activado.
+     */
+    public function pdf(Payment $payment): Document
+    {
+        $business = $this->settings->all();
+
+        return Pdf::loadView('payments.receipt', [
+            'receipt' => $this->for($payment),
+            'business' => $business,
+            'logo' => $business['receipt_shows_business_header'] ? $this->settings->logoDataUri() : null,
+        ])
+            ->setPaper('a4')
+            // Solo se incrustan los caracteres usados de la fuente: el PDF pasa de ~900 KB a unos pocos KB.
+            ->setOption('isFontSubsettingEnabled', true);
+    }
+
+    /**
+     * Nombre del archivo: `comprobante-C-00012.pdf`.
+     */
+    public static function fileName(Payment $payment): string
+    {
+        return 'comprobante-'.$payment->number().'.pdf';
+    }
+
+    /**
+     * Enlace al PDF para mandarle al cliente: se abre sin usuario, pero va firmado (no se puede
+     * cambiar el número de cobro para ver otro) y vence a los días que indica
+     * `cali.shared_receipt_days`.
+     */
+    public static function sharedUrl(Payment $payment): string
+    {
+        return URL::temporarySignedRoute(
+            'payments.receipt.shared',
+            now()->addDays((int) config('cali.shared_receipt_days')),
+            ['payment' => $payment],
+        );
+    }
+
     /**
      * @return Receipt
      */

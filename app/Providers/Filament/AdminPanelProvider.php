@@ -40,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn (): View => view('filament.admin.version', ['isLogin' => true]))
             ->renderHook(PanelsRenderHook::USER_MENU_BEFORE, fn (): View => view('filament.admin.version'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.table-cards'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.admin.share-receipt'))
             ->navigationGroups([
                 NavigationGroup::make('Ventas'),
                 NavigationGroup::make('Compras'),

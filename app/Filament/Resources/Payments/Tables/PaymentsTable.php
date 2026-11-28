@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Payments\Tables;
 use App\Enums\PaymentMethod;
 use App\Filament\Resources\Payments\Actions\CancelPaymentAction;
 use App\Filament\Resources\Payments\Actions\DownloadReceiptAction;
+use App\Filament\Resources\Payments\Actions\SendReceiptByWhatsAppAction;
+use App\Filament\Resources\Payments\Actions\ShareReceiptAction;
 use App\Models\Payment;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -47,6 +49,8 @@ class PaymentsTable
             ->recordActions([
                 ViewAction::make()->label('Ver'),
                 DownloadReceiptAction::make(),
+                SendReceiptByWhatsAppAction::make(),
+                ShareReceiptAction::make(),
                 CancelPaymentAction::make(),
             ]);
     }

@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Payments\Pages;
 
 use App\Actions\RegisterPayment;
 use App\Filament\Resources\Payments\Actions\DownloadReceiptAction;
+use App\Filament\Resources\Payments\Actions\SendReceiptByWhatsAppAction;
+use App\Filament\Resources\Payments\Actions\ShareReceiptAction;
 use App\Filament\Resources\Payments\PaymentResource;
 use App\Models\Payment;
 use Filament\Actions\Action;
@@ -37,7 +39,8 @@ class CreatePayment extends CreateRecord
     }
 
     /**
-     * Al registrar el cobro se ofrece el comprobante para entregarle al cliente.
+     * Al registrar el cobro se ofrece el comprobante para entregarle al cliente: descargarlo,
+     * mandarle el enlace por WhatsApp o compartir el PDF desde el celular.
      */
     protected function getCreatedNotification(): ?Notification
     {
@@ -50,6 +53,11 @@ class CreatePayment extends CreateRecord
                 Action::make('receipt')->label('Descargar comprobante')
                     ->url(DownloadReceiptAction::url($payment))
                     ->openUrlInNewTab(),
+                Action::make('whatsapp')->label('Enviar por WhatsApp')
+                    ->url(SendReceiptByWhatsAppAction::url($payment))
+                    ->openUrlInNewTab(),
+                Action::make('share')->label('Compartir PDF')
+                    ->alpineClickHandler(ShareReceiptAction::clickHandler($payment)),
             ])
             ->persistent();
     }
